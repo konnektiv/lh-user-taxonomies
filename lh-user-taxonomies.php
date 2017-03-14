@@ -258,16 +258,14 @@ public function save_profile($user_id) {
 	 * show_admin_column
 	 */
 	public function lh_user_taxonomies_add_user_id_column($columns) {
-$args=array(
-  'object_type' => array('user'),
-'show_admin_column' => true
-);
-$taxonomies = get_taxonomies( $args, "objects");
-foreach ($taxonomies as $taxonomy) {
-$columns[$taxonomy->name] = $taxonomy->labels->name;
-}
-    return $columns;
-}
+
+		foreach (self::$taxonomies as $taxonomy) {
+
+			if ( $taxonomy->show_admin_column )
+				$columns[$taxonomy->name] = $taxonomy->labels->name;
+		}
+	    return $columns;
+	}
 	/**
 	 * Just a private function to
 	 * populate column content
@@ -362,30 +360,25 @@ private function set_terms_for_user( $user_id, $taxonomy, $terms = array(), $bul
 	 */
 	public function user_query($Query = '') {
 		global $pagenow,$wpdb;
-if ( $pagenow == 'users.php' ){
-$args=array(
-  'object_type' => array('user'),
-'show_admin_column' => true
-);
-$taxonomies = get_taxonomies( $args, "objects");
-foreach ($taxonomies as $taxonomy) {
-if(!empty($_GET[$taxonomy->name])) {
-$term = get_term_by('slug', esc_attr($_GET[$taxonomy->name]), $taxonomy->name);
-$new_ids = get_objects_in_term($term->term_id, $taxonomy->name);
-if (!isset($ids) || empty($ids)){  
-$ids = $new_ids;  
-} else {   
-$ids = array_intersect($ids, $new_ids);
-}
-}
-}
-if ( isset( $ids ) ){  
-$ids = implode(',', wp_parse_id_list( $ids ) );
-$Query->query_where .= " AND $wpdb->users.ID IN ($ids)";
-}
-}		
-	
-}
+		if ( $pagenow == 'users.php' ){
+
+			foreach (self::$taxonomies as $taxonomy) {
+				if(!empty($_GET[$taxonomy->name])) {
+					$term = get_term_by('slug', esc_attr($_GET[$taxonomy->name]), $taxonomy->name);
+					$new_ids = get_objects_in_term($term->term_id, $taxonomy->name);
+					if (!isset($ids) || empty($ids)){
+						$ids = $new_ids;
+					} else {
+						$ids = array_intersect($ids, $new_ids);
+					}
+				}
+			}
+			if ( isset( $ids ) ){
+				$ids = implode(',', wp_parse_id_list( $ids ) );
+				$Query->query_where .= " AND $wpdb->users.ID IN ($ids)";
+			}
+		}
+	}
 
 /**
 	 * Handle bulk editing of users
@@ -501,19 +494,11 @@ if ( current_user_can( 'edit_user', $user ) ) {
 		}
 
 
+foreach (self::$taxonomies as $taxonomy){
+	if ( ! $taxonomy->show_admin_column )
+		continue;
 
-		// Get taxonomies
-$args=array(
-  'object_type' => array('user'),
-'show_admin_column' => true
-);
-$taxonomies = get_taxonomies( $args, "objects");
-
-
-
-foreach ($taxonomies as $taxonomy){
-
-$terms = get_terms( $taxonomy->name, array('hide_empty' => false ) ); 
+$terms = get_terms( $taxonomy->name, array('hide_empty' => false ) );
 
 
 ?>
