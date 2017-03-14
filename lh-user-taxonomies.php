@@ -19,59 +19,59 @@ You should have received a copy of the GNU General Public License along with thi
 class LH_User_Taxonomies_plugin {
 	private static $taxonomies	= array();
 var $namespace = 'lh_user_taxonomies';
-	
 
-	
+
+
 	/**
 	 * This is our way into manipulating registered taxonomies
 	 * It's fired at the end of the register_taxonomy function
-	 * 
+	 *
 	 * @param String $taxonomy	- The name of the taxonomy being registered
 	 * @param String $object	- The object type the taxonomy is for; We only care if this is "user"
 	 * @param Array $args		- The user supplied + default arguments for registering the taxonomy
 	 */
 	public function registered_taxonomy($taxonomy, $object, $args) {
 		global $wp_taxonomies;
-		
+
 		// Only modify user taxonomies, everything else can stay as is
 		if($object != 'user') return;
-		
+
 		// We're given an array, but expected to work with an object later on
 		$args	= (object) $args;
-		
+
 		// Register any hooks/filters that rely on knowing the taxonomy now
 		add_filter("manage_edit-{$taxonomy}_columns",	array($this, 'set_user_column'));
 		add_action("manage_{$taxonomy}_custom_column",	array($this, 'set_user_column_values'), 10, 3);
-		
+
 		// Set the callback to update the count if not already set
 		if(empty($args->update_count_callback)) {
 			$args->update_count_callback	= array($this, 'update_count');
 		}
-		
+
 		// We're finished, make sure we save out changes
 		$wp_taxonomies[$taxonomy]		= $args;
 		self::$taxonomies[$taxonomy]	= $args;
 	}
-	
+
 	/**
 	 * We need to manually update the number of users for a taxonomy term
-	 * 
+	 *
 	 * @see	_update_post_term_count()
 	 * @param Array $terms		- List of Term taxonomy IDs
 	 * @param Object $taxonomy	- Current taxonomy object of terms
 	 */
 	public function update_count($terms, $taxonomy) {
 		global $wpdb;
-		
+
 		foreach((array) $terms as $term) {
 			$count	= $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $wpdb->term_relationships, $wpdb->users WHERE $wpdb->term_relationships.object_id = $wpdb->users.ID and $wpdb->term_relationships.term_taxonomy_id = %d", $term));
-			
+
 			do_action('edit_term_taxonomy', $term, $taxonomy);
 			$wpdb->update($wpdb->term_taxonomy, compact('count'), array('term_taxonomy_id'=>$term));
 			do_action('edited_term_taxonomy', $term, $taxonomy);
 		}
 	}
-	
+
 	/**
 	 * Add each of the taxonomies to the Users menu
 	 * They will behave in the same was as post taxonomies under the Posts menu item
@@ -81,17 +81,17 @@ var $namespace = 'lh_user_taxonomies';
 		// Put the taxonomies in alphabetical order
 		$taxonomies	= self::$taxonomies;
 		ksort($taxonomies);
-		
+
 		foreach($taxonomies as $key=>$taxonomy) {
 			add_users_page(
-				$taxonomy->labels->menu_name, 
-				$taxonomy->labels->menu_name, 
-				$taxonomy->cap->manage_terms, 
+				$taxonomy->labels->menu_name,
+				$taxonomy->labels->menu_name,
+				$taxonomy->cap->manage_terms,
 				"edit-tags.php?taxonomy={$key}"
 			);
 		}
 	}
-	
+
 	/**
 	 * Fix a bug with highlighting the parent menu item
 	 * By default, when on the edit taxonomy page for a user taxonomy, the Posts tab is highlighted
@@ -99,16 +99,16 @@ var $namespace = 'lh_user_taxonomies';
 	 */
 	function parent_menu($parent = '') {
 		global $pagenow;
-		
+
 		// If we're editing one of the user taxonomies
 		// We must be within the users menu, so highlight that
 		if(!empty($_GET['taxonomy']) && $pagenow == 'edit-tags.php' && isset(self::$taxonomies[$_GET['taxonomy']])) {
 			$parent	= 'users.php';
 		}
-		
+
 		return $parent;
 	}
-	
+
 	/**
 	 * Correct the column names for user taxonomies
 	 * Need to replace "Posts" with "Users"
@@ -118,7 +118,7 @@ var $namespace = 'lh_user_taxonomies';
 		$columns['users']	= __('Users');
 		return $columns;
 	}
-	
+
 	/**
 	 * Set values for custom columns in user taxonomies
 	 */
@@ -128,7 +128,7 @@ var $namespace = 'lh_user_taxonomies';
 			echo $term->count;
 		}
 	}
-	
+
 
 
 	private function buildTree( array &$elements, $parentId = 0 ) {
@@ -145,13 +145,13 @@ var $namespace = 'lh_user_taxonomies';
 			}
 		return $branch;
 	}
-	
+
 
 	private function renderTree( $elements, $stack, $user, $key, $input = 'checkbox' ) {
 		foreach ( $elements as $element ) {
 			?>
 			<div>
-				<input type="<?php echo $input ?>" name="<?php echo $key?>[]" id="<?php echo "{$key}-{$element->slug}"?>" value="<?php echo $element->slug?>" <?php 
+				<input type="<?php echo $input ?>" name="<?php echo $key?>[]" id="<?php echo "{$key}-{$element->slug}"?>" value="<?php echo $element->slug?>" <?php
 				if ($user->ID){
 					if (in_array($element->slug, $stack)) {
 						echo "checked=\"checked\"";
@@ -169,15 +169,15 @@ var $namespace = 'lh_user_taxonomies';
 	}
 	/**
 	 * Add the taxonomies to the user view/edit screen
-	 * 
+	 *
 	 * @param Object $user	- The user of the view/edit screen
 	 */
 	public function user_profile($user) {
-		
+
 		// Using output buffering as we need to make sure we have something before outputting the header
 		// But we can't rely on the number of taxonomies, as capabilities may vary
 		ob_start();
-		
+
 		foreach(self::$taxonomies as $key=>$taxonomy):
 			// Check the current user can assign terms for this taxonomy
 			//if(!current_user_can($taxonomy->cap->assign_terms)) continue;
@@ -210,10 +210,10 @@ var $namespace = 'lh_user_taxonomies';
 			echo $output;
 		}
 	}
-	
+
 	/**
 	 * Save the custom user taxonomies when saving a users profile
-	 * 
+	 *
 	 * @param Integer $user_id	- The ID of the user to update
 	 */
 public function save_profile($user_id) {
@@ -234,7 +234,7 @@ public function save_profile($user_id) {
 }
 		}
 	}
-	
+
 	/**
 	 * Usernames can't match any of our user taxonomies
 	 * As otherwise it will cause a URL conflict
@@ -242,7 +242,7 @@ public function save_profile($user_id) {
 	 */
 	public function restrict_username($username) {
 		if(isset(self::$taxonomies[$username])) return '';
-		
+
 		return $username;
 	}
 	/**
@@ -339,7 +339,7 @@ private function set_terms_for_user( $user_id, $taxonomy, $terms = array(), $bul
 
 	/**
 	 * Add the column content
-	 * 
+	 *
 	 */
 	public function lh_user_taxonomies_add_taxonomy_column_content($value, $column_name, $user_id) {
 if (taxonomy_exists($column_name)) {
@@ -582,11 +582,11 @@ $terms = get_terms( $taxonomy->name, array('hide_empty' => false ) );
 	public function __construct() {
 		// Taxonomies
 		add_action('registered_taxonomy', array($this, 'registered_taxonomy'), 10, 3);
-		
+
 		// Menus
 		add_action('admin_menu', array($this, 'admin_menu'));
 		add_filter('parent_file', array($this, 'parent_menu'));
-		
+
 		// User Profiles
 		add_action('show_user_profile',	array($this, 'user_profile'));
 		add_action('edit_user_profile',	array($this, 'user_profile'));
