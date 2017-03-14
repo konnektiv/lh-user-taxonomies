@@ -179,6 +179,14 @@ var $namespace = 'lh_user_taxonomies';
 		ob_start();
 
 		foreach(self::$taxonomies as $key=>$taxonomy):
+			if ( !$taxonomy->public )
+				continue;
+
+			if ( ( $output = apply_filters('lh_user_taxonomies_user_profile', false, $user, $key, $taxonomy ) ) ) {
+				echo $output;
+				continue;
+			}
+
 			// Check the current user can assign terms for this taxonomy
 			//if(!current_user_can($taxonomy->cap->assign_terms)) continue;
 			// Get all the terms in this taxonomy
