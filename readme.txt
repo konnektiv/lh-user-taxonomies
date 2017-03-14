@@ -1,9 +1,9 @@
 === LH User Taxonomies ===
 Contributors: shawfactor
-Donate link: http://lhero.org/plugins/lh-user-taxonomies/
+Donate link: https://lhero.org/plugins/lh-user-taxonomies/
 Tags: user, users, taxonomy, custom taxonomy, register_taxonomy, developer
 Requires at least: 3.0
-Tested up to: 4.2
+Tested up to: 4.7
 Stable tag: trunk
 
 Simplify the process of adding support for custom taxonomies for Users. Just use `register_taxonomy` and everything else is taken care of.
@@ -49,18 +49,19 @@ register_taxonomy('profession', 'user', array(
 Read more about [registering taxonomies in the codex](http://codex.wordpress.org/Function_Reference/register_taxonomy)
 This is heavily inspired by previous work by [Justin Tadlock](http://justintadlock.com/archives/2011/10/20/custom-user-taxonomies-in-wordpress) and also forks Damian Gostomskis plugin in the repository to add additional functionality, including:
 
-*Fixes a bug with display of existing user taxonomies in the user-edit screen
-*Fixes a bug with taxonomy count in the old plugin where deleting users did not update the count
-*Add support for 'single_value' attribute when registering a user taxonomy for taxonomies which should only have one value.
-*Properly supports the capabilities associated with the taxonomy when registered.
-*Supports 'show_admin_column' attribute when registering the taxonomy in the same way as post taxonomies.
+* Fixes a bug with display of existing user taxonomies in the user-edit screen
+* Fixes a bug with taxonomy count in the old plugin where deleting users did not update the count
+* Add support for 'single_value' attribute when registering a user taxonomy for taxonomies which should only have one value.
+* Properly supports the capabilities associated with the taxonomy when registered.
+* Supports 'show_admin_column' attribute when registering the taxonomy in the same way as post taxonomies.
+* Where 'show_admin_column' is true admins can assign user taxonomies using bulk edit functionality.
 
 Check out [our documentation][docs] for more information on how to register user taxonomies. 
 
 All tickets for the project are being tracked on [GitHub][].
 
 
-[docs]: http://lhero.org/plugins/lh-user-taxonomies/
+[docs]: https://lhero.org/plugins/lh-user-taxonomies/
 [GitHub]: https://github.com/shawfactor/lh-user-taxonomies
 
 
@@ -82,3 +83,15 @@ All tickets for the project are being tracked on [GitHub][].
 **1.3 July 17, 2015**  
 * Documentation links
 
+
+**1.41 August 31, 2015**  
+* Fix for saving taxonomies on profile when you need to remove term - thanks Greumb
+
+**1.50 March 04, 2016**  
+* Added bulk edit functionality
+
+**1.50 March 04, 2016**  
+* Added bulk edit functionality
+
+**1.52 February 22, 2017**  
+* Buildtree bug fix
