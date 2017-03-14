@@ -272,7 +272,7 @@ $terms = wp_get_object_terms( $user, $taxonomy);
 			$href = empty($page) ? add_query_arg(array($taxonomy => $term->slug), admin_url('users.php')) : add_query_arg(array('user-group' => $term->slug), $page);
 			$in[] = sprintf('%s%s%s', '<a href="'.$href.'" title="'.esc_attr($term->description).'">', $term->name, '</a>');
 		}
-	  	return implode('', $in);
+	  	return implode(', ', $in);
 	}
 
 
