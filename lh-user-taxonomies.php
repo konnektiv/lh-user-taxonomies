@@ -342,12 +342,12 @@ private function set_terms_for_user( $user_id, $taxonomy, $terms = array(), $bul
 	 *
 	 */
 	public function lh_user_taxonomies_add_taxonomy_column_content($value, $column_name, $user_id) {
-if (taxonomy_exists($column_name)) {
-return $this->lh_user_taxonomies_get_user_taxonomies($user_id,$column_name);
-} else {
-    return $value;
-}
-}
+		if (taxonomy_exists($column_name)) {
+			return $this->lh_user_taxonomies_get_user_taxonomies($user_id,$column_name);
+		} else {
+		    return $value;
+		}
+	}
 	/**
 	 * Alters the User query
 	 * to return a different list based on query vars on users.php
