@@ -1,0 +1,10 @@
+{
+  "name": "konnektiv/lh-user-taxonomies",
+  "description": "This is a WordPress plugin that extends the default taxonomy functionality to users.",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0+",
+  "require": {
+    "composer/installers": "~1.0",
+    "php": ">=5.2.4"
+  }
+}
