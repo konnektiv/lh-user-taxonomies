@@ -36,7 +36,10 @@ class LH_User_Taxonomies_plugin {
 		global $wp_taxonomies;
 
 		// Only modify user taxonomies, everything else can stay as is
-		if($object != 'user') return;
+		if ($object != 'user') return;
+
+		// only use for public taxonomies
+		if ( ! $args['public'] ) return;
 
 		// We're given an array, but expected to work with an object later on
 		$args	= (object) $args;
@@ -313,8 +316,6 @@ class LH_User_Taxonomies_plugin {
 		ob_start();
 
 		foreach(self::$taxonomies as $key=>$taxonomy):
-			if ( !$taxonomy->public )
-				continue;
 
 			if ( ( $output = apply_filters('lh_user_taxonomies_user_profile', false, $user, $key, $taxonomy ) ) ) {
 				echo $output;
