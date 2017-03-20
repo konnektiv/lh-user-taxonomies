@@ -703,6 +703,17 @@ $terms = self::get_terms( $taxonomy->name, array('hide_empty' => false ) );
 	}
 
 
+	function bp_include() {
+		if ( bp_is_active( 'xprofile' ) ) {
+			require_once( 'classes/class-bp-xprofile-field-type-taxonomy.php');
+		}
+	}
+
+	function xprofile_field_types( $field_types ) {
+		$field_types['taxonomy']  = 'BP_XProfile_Field_Type_Taxonomy';
+		return $field_types;
+	}
+
 	/**
 	 * Create tables
 	 *
@@ -760,6 +771,10 @@ $terms = self::get_terms( $taxonomy->name, array('hide_empty' => false ) );
 		// Bulk edit
 		add_filter( 'views_users', array( $this, 'bulk_edit') );
 		add_action( 'admin_init',  array( $this, 'bulk_edit_action' ) );
+
+		// add buddpress xprofile field type
+		add_action( 'bp_include', array( $this, 'bp_include') );
+		add_filter( 'bp_xprofile_get_field_types', array( $this, 'xprofile_field_types') );
 	}
 
 
@@ -767,4 +782,5 @@ $terms = self::get_terms( $taxonomy->name, array('hide_empty' => false ) );
 
 }
 
-$lh_user_taxonomies_instance = new LH_User_Taxonomies_plugin;
+$GLOBALS['lh_user_taxonomies_instance'] = new LH_User_Taxonomies_plugin;
+register_activation_hook( __FILE__, array( 'LH_User_Taxonomies_plugin', 'create_tables' ) );
