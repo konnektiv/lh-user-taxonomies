@@ -208,9 +208,10 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 	public function edit_field_options_html( array $args = array() ) {
 		$settings = self::get_field_settings( $this->field_obj->id );
 		$original_option_values = wp_list_pluck( LH_User_Taxonomies_plugin::get_object_terms( $args['user_id'], $settings['taxonomy'] ), 'slug' );
+		$tax = get_taxonomy( $settings['taxonomy'] );
 
 		$options = $this->get_children();
-		$html    = '<option value="">' . /* translators: no option picked in select box */ esc_html__( '----', 'buddypress' ) . '</option>';
+		$html    = '<option value="">' . /* translators: no option picked in select box */ sprintf( esc_html__( 'Choose your %s', 'buddypress' ), $tax->labels->singular_name ) . '</option>';
 
 		if ( empty( $original_option_values ) && !empty( $_POST['field_' . $this->field_obj->id] ) ) {
 			$original_option_values = sanitize_text_field(  $_POST['field_' . $this->field_obj->id] );
