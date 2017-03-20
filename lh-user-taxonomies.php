@@ -17,8 +17,10 @@ You should have received a copy of the GNU General Public License along with thi
 */
 
 class LH_User_Taxonomies_plugin {
-	private static $taxonomies	= array();
-var $namespace = 'lh_user_taxonomies';
+	public static $wp_term_relationships = '';
+	public static $lh_term_relationships = '';
+	public static $taxonomies	= array();
+	var $namespace = 'lh_user_taxonomies';
 
 
 
@@ -167,6 +169,138 @@ var $namespace = 'lh_user_taxonomies';
 			?></div><?php
 	    }
 	}
+
+	/**
+	 * Set needed $wpdb->tables to user specific taxonomy tables
+	 *
+	 *
+	 * @access public
+	 * @static
+	 */
+	public static function set_tables() {
+		global $wpdb;
+
+		$wpdb->term_relationships = self::$lh_term_relationships;
+	}
+
+	/**
+	 * Reset $wpdb->tables to the one set by WordPress
+	 *
+	 * @access public
+	 * @static
+	 */
+	public static function reset_tables() {
+		global $wpdb;
+
+		$wpdb->term_relationships = self::$wp_term_relationships;
+	}
+
+	/**
+	 * Get user terms
+	 *
+	 * @access public
+	 * @static
+	 *
+	 * @uses wp_get_object_terms()
+	 */
+	public static function get_object_terms( $user_id, $taxonomy ) {
+		self::set_tables();
+		$return = wp_get_object_terms( $user_id, $taxonomy );
+		self::reset_tables();
+		return $return;
+	}
+
+	/**
+	 * Set user terms
+	 *
+	 * @access public
+	 * @static
+	 *
+	 * @uses wp_set_object_terms()
+	 */
+	public static function set_object_terms( $object_id, $terms, $taxonomy, $append = false ) {
+		self::set_tables();
+		$return = wp_set_object_terms( $object_id, $terms, $taxonomy, $append );
+		self::reset_tables();
+		return $return;
+	}
+
+	/**
+	 * Remove user terms
+	 *
+	 * @access public
+	 * @static
+	 *
+	 * @uses wp_remove_object_terms()
+	 */
+	public static function remove_object_terms( $object_id, $terms, $taxonomy ) {
+		self::set_tables();
+		$return = wp_remove_object_terms( $object_id, $terms, $taxonomy );
+		self::reset_tables();
+		return $return;
+	}
+
+
+	/**
+	 * Remove all user relationships
+	 *
+	 * @access public
+	 * @static
+	 *
+	 * @uses wp_delete_object_term_relationships()
+	 */
+	public static function delete_object_term_relationships( $object_id, $taxonomies ) {
+		self::set_tables();
+		$return = wp_delete_object_term_relationships( $object_id, $taxonomies );
+		self::reset_tables();
+		return $return;
+	}
+
+	/**
+	 * Get all terms for a given taxonomy
+	 *
+	 * @access public
+	 * @static
+	 *
+	 * @uses get_terms()
+	 */
+	public static function get_terms( $taxonomies, $args = '' ) {
+		self::set_tables();
+		$return = get_terms( $taxonomies, $args );
+		self::reset_tables();
+		return $return;
+	}
+
+	/**
+	 * Get term thanks to a specific field
+	 *
+	 * @access public
+	 * @static
+	 *
+	 * @uses get_term_by()
+	 */
+	public static function get_term_by( $field, $value, $taxonomy, $output = OBJECT, $filter = 'raw' ) {
+		self::set_tables();
+		$return = get_term_by( $field, $value, $taxonomy, $output, $filter = 'raw' );
+		self::reset_tables();
+		return $return;
+	}
+
+	/**
+	 * Get user ids for a given term
+	 *
+	 * @access public
+	 * @static
+	 *
+	 * @uses get_objects_in_term()
+	 */
+	public static function get_objects_in_term( $term_ids, $taxonomies, $args = array() ) {
+		self::set_tables();
+		$return = get_objects_in_term( $term_ids, $taxonomies, $args );
+		self::reset_tables();
+		return $return;
+	}
+
 	/**
 	 * Add the taxonomies to the user view/edit screen
 	 *
@@ -190,8 +324,8 @@ var $namespace = 'lh_user_taxonomies';
 			// Check the current user can assign terms for this taxonomy
 			//if(!current_user_can($taxonomy->cap->assign_terms)) continue;
 			// Get all the terms in this taxonomy
-			$terms		= get_terms($key, array('hide_empty'=>false));
-			$stack 		= wp_list_pluck( wp_get_object_terms( $user->ID, $key ), 'slug' );
+			$terms		= self::get_terms($key, array('hide_empty'=>false));
+			$stack 		= wp_list_pluck( self::get_object_terms( $user->ID, $key ), 'slug' );
 			$input_type = ( $taxonomy->single_value ) ? 'radio' : 'checkbox' ;
 			?>
 
@@ -231,10 +365,10 @@ public function save_profile($user_id) {
 
 					if (is_array($_POST[$key])){
 						$term = $_POST[$key];
-						wp_set_object_terms($user_id, $term, $key, false);
+						self::set_object_terms($user_id, $term, $key, false);
 					} else {
 						$term	= esc_attr($_POST[$key]);
-						wp_set_object_terms($user_id, array($term), $key, false);
+						self::set_object_terms($user_id, array($term), $key, false);
 					}
 				// Save the data
 			clean_object_term_cache($user_id, $key);
@@ -271,7 +405,7 @@ public function save_profile($user_id) {
 	 * populate column content
 	 */
 	private function lh_user_taxonomies_get_user_taxonomies($user, $taxonomy, $page = null) {
-$terms = wp_get_object_terms( $user, $taxonomy);
+		$terms = self::get_object_terms( $user, $taxonomy);
 		if(empty($terms)) { return false; }
 		$in = array();
 		foreach($terms as $term) {
@@ -305,7 +439,7 @@ private function get_terms_for_user( $user = false, $taxonomy = '' ) {
 	}
 
 	// Return user terms
-	return wp_get_object_terms( $user_id, $taxonomy, array(
+	return self::get_object_terms( $user_id, $taxonomy, array(
 		'fields' => 'all_with_object_id'
 	) );
 }
@@ -328,14 +462,14 @@ private function set_terms_for_user( $user_id, $taxonomy, $terms = array(), $bul
 
 	// Delete all user terms
 	if ( is_null( $terms ) || empty( $terms ) ) {
-		wp_delete_object_term_relationships( $user_id, $taxonomy );
+		self::delete_object_term_relationships( $user_id, $taxonomy );
 
 	// Set the terms
 	} else {
 		$_terms = array_map( 'sanitize_key', $terms );
 
 		// Sets the terms for the user
-		wp_set_object_terms( $user_id, $_terms, $taxonomy, false );
+		self::set_object_terms( $user_id, $_terms, $taxonomy, false );
 	}
 
 	// Clean the cache
@@ -364,8 +498,8 @@ private function set_terms_for_user( $user_id, $taxonomy, $terms = array(), $bul
 
 			foreach (self::$taxonomies as $taxonomy) {
 				if(!empty($_GET[$taxonomy->name])) {
-					$term = get_term_by('slug', esc_attr($_GET[$taxonomy->name]), $taxonomy->name);
-					$new_ids = get_objects_in_term($term->term_id, $taxonomy->name);
+					$term = self::get_term_by('slug', esc_attr($_GET[$taxonomy->name]), $taxonomy->name);
+					$new_ids = self::get_objects_in_term($term->term_id, $taxonomy->name);
 					if (!isset($ids) || empty($ids)){
 						$ids = $new_ids;
 					} else {
@@ -498,7 +632,7 @@ foreach (self::$taxonomies as $taxonomy){
 	if ( ! $taxonomy->show_admin_column )
 		continue;
 
-$terms = get_terms( $taxonomy->name, array('hide_empty' => false ) );
+$terms = self::get_terms( $taxonomy->name, array('hide_empty' => false ) );
 
 
 ?>
@@ -569,10 +703,41 @@ $terms = get_terms( $taxonomy->name, array('hide_empty' => false ) );
 
 
 	/**
+	 * Create tables
+	 *
+	 * @access private
+	 */
+	public static function create_tables() {
+		global $wpdb, $blog_id;
+
+		$sql = array();
+		$blog_prefix = ($blog_id > 1)?"{$blog_id}_":"";
+		$charset_collate = !empty( $wpdb->charset ) ? "DEFAULT CHARACTER SET $wpdb->charset" : '';
+
+		$sql[] = "CREATE TABLE {$wpdb->base_prefix}{$blog_prefix}user_term_relationships (
+				object_id bigint(20) unsigned NOT NULL DEFAULT '0',
+			  	term_taxonomy_id bigint(20) unsigned NOT NULL DEFAULT '0',
+			  	term_order int(11) NOT NULL DEFAULT '0',
+			  	PRIMARY KEY (object_id,term_taxonomy_id),
+			  	KEY term_taxonomy_id (term_taxonomy_id)
+			) {$charset_collate};";
+
+		require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+
+		dbDelta( $sql );
+	}
+
+	/**
 	 * Register all the hooks and filters we can in advance
 	 * Some will need to be registered later on, as they require knowledge of the taxonomy name
 	 */
 	public function __construct() {
+		global $wpdb, $blog_id;
+
+		self::$wp_term_relationships = $wpdb->term_relationships;
+		$blog_prefix = ($blog_id > 1)?"{$blog_id}_":"";
+		self::$lh_term_relationships = $wpdb->base_prefix . $blog_prefix . 'user_term_relationships';
+
 		// Taxonomies
 		add_action('registered_taxonomy', array($this, 'registered_taxonomy'), 10, 3);
 
@@ -589,7 +754,7 @@ $terms = get_terms( $taxonomy->name, array('hide_empty' => false ) );
 		add_filter('sanitize_user', array($this, 'restrict_username'));
 		add_filter('manage_users_columns', array($this, 'lh_user_taxonomies_add_user_id_column'));
 		add_action('manage_users_custom_column', array($this, 'lh_user_taxonomies_add_taxonomy_column_content'), 10, 3);
-                add_action('pre_user_query', array($this, 'user_query'));
+        add_action('pre_user_query', array($this, 'user_query'));
 
 		// Bulk edit
 		add_filter( 'views_users', array( $this, 'bulk_edit') );
