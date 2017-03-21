@@ -632,22 +632,19 @@ if ( current_user_can( 'edit_user', $user ) ) {
 			return $views;
 		}
 
+		foreach (self::$taxonomies as $taxonomy){
+			if ( ! $taxonomy->show_admin_column )
+				continue;
 
-foreach (self::$taxonomies as $taxonomy){
-	if ( ! $taxonomy->show_admin_column )
-		continue;
-
-$terms = self::get_terms( $taxonomy->name, array('hide_empty' => false ) );
-
-
-?>
+			$terms = self::get_terms( $taxonomy->name, array('hide_empty' => false ) );
 
 
+		?>
 		<form method="post" class="user-tax-form">
 			<fieldset class="alignleft">
 				<legend class="screen-reader-text"><?php esc_html_e( 'Update Groups', $this->namespace ); ?></legend>
 
-<input name="<?php echo esc_attr( $taxonomy->name ); ?>-bulk_users_to_action" value="" type="hidden" id="<?php echo esc_attr( $taxonomy->name ); ?>-bulk_users_to_action" />
+<input name="<?php echo esc_attr( $taxonomy->name ); ?>-bulk_users_to_action" value="" type="hidden" id="<?php echo esc_attr( $taxonomy->name ); ?>-bulk_users_to_action" class="user-tax-users-input" />
 
 				<label for="<?php echo esc_attr( $taxonomy->name ); ?>-select" class="screen-reader-text">
 					<?php echo esc_html( $taxonomy->labels->name ); ?>
@@ -688,19 +685,20 @@ $terms = self::get_terms( $taxonomy->name, array('hide_empty' => false ) );
 			</fieldset>
 		</form>
 
+
+		<?php } ?>
+
 		<script type="text/javascript">
 			jQuery( document ).ready( function( $ ) {
-				$( '.tablenav.bottom' ).remove();
-				$( '.wrap' ).append( $( '.user-tax-form' ) );
-				$( '.wrap' ).on( 'submit', '.user-tax-form', function() {
+				$( '.tablenav .actions:last' ).after( $('.user-tax-form' ).wrap('<div class="alignleft actions"></div>').parent() );
+				$( '.user-tax-form' ).on( 'submit', function(e) {
 					var users = $( '.wp-list-table.users .check-column input:checked' ).serialize();
-					$( '#<?php echo esc_attr( $taxonomy->name ); ?>-bulk_users_to_action' ).val( users );
+					$(this).find('.user-tax-users-input').val( users );
 				} );
 			} );
 		</script>
 
 		<?php
-}
 
 
 		return $views;
