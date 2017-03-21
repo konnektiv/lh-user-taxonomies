@@ -88,6 +88,9 @@ class LH_User_Taxonomies_plugin {
 		ksort($taxonomies);
 
 		foreach($taxonomies as $key=>$taxonomy) {
+			if ( ! $taxonomy->show_in_menu )
+				continue;
+
 			add_users_page(
 				$taxonomy->labels->menu_name,
 				$taxonomy->labels->menu_name,
