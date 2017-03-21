@@ -400,7 +400,8 @@ public function save_profile($user_id) {
 		foreach (self::$taxonomies as $taxonomy) {
 
 			if ( $taxonomy->show_admin_column )
-				$columns[$taxonomy->name] = $taxonomy->labels->name;
+				$columns[$taxonomy->name] = $taxonomy->single_value?$taxonomy->labels->singular_name:
+					$taxonomy->labels->name;
 		}
 	    return $columns;
 	}
