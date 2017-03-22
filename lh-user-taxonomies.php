@@ -577,19 +577,15 @@ private function set_terms_for_user( $user_id, $taxonomy, $terms = array(), $bul
 
 		// Action if it is a bulk edit request
 
+		//need to fix this nonce and name are same
 
-//need to fix this nonce and name are same
+		if ( ! isset( $_POST[$this->namespace."-bulk_edit-taxonomy"] ) )
+			return;
 
-if (isset($_POST[$this->namespace."-bulk_edit-taxonomy"])){
+		if ( ! wp_verify_nonce($_POST[$this->namespace."-bulk_edit-nonce"], $this->namespace."-bulk_edit-nonce" ) )
+			return;
 
-
-
-if (wp_verify_nonce($_POST[$this->namespace."-bulk_edit-nonce"], $this->namespace."-bulk_edit-nonce" )){
-
-$taxonomy = $_POST[$this->namespace."-bulk_edit-taxonomy"];
-
-
-
+		$taxonomy = $_POST[$this->namespace."-bulk_edit-taxonomy"];
 
 		// Setup the empty users array
 		$users = array();
@@ -606,64 +602,55 @@ $taxonomy = $_POST[$this->namespace."-bulk_edit-taxonomy"];
 		$users    = $users['users'];
 
 
-$action   = strstr( $_POST[$this->namespace."-bulk_edit-action"], '-', true );
-$term     = str_replace( $action, '', $_POST[$this->namespace."-bulk_edit-action"] );
+		$action   = strstr( $_POST[$this->namespace."-bulk_edit-action"], '-', true );
+		$term     = str_replace( $action, '', $_POST[$this->namespace."-bulk_edit-action"] );
 
-foreach ( $users as $user ) {
-
-
-
-if ( current_user_can( 'edit_user', $user ) ) {
+		foreach ( $users as $user ) {
 
 
+			if ( current_user_can( 'edit_user', $user ) ) {
+
+				// Get term slugs of user for this taxonomy
+				$terms = $this->get_terms_for_user( $user, $taxonomy);
+
+				$update_terms = wp_list_pluck( $terms, 'slug' );
 
 
-			// Get term slugs of user for this taxonomy
-			$terms = $this->get_terms_for_user( $user, $taxonomy);
+				// Adding
+				if ( 'add' === $action ) {
+					if ( ! in_array( $term, $update_terms ) ) {
+						$update_terms[] = $term;
+					}
 
-			$update_terms = wp_list_pluck( $terms, 'slug' );
-
-
-// Adding
-			if ( 'add' === $action ) {
-				if ( ! in_array( $term, $update_terms ) ) {
-					$update_terms[] = $term;
+				// Removing
+				} elseif ( 'remove' === $action ) {
+					$index = array_search( $term, $update_terms );
+					if ( isset( $update_terms[ $index ] ) ) {
+						unset( $update_terms[ $index ] );
+					}
+				} elseif ( 'set' === $action ) {
+					$update_terms = array( $term );
+				} elseif ( 'unset' === $action ) {
+					$update_terms = null;
 				}
 
-			// Removing
-			} elseif ( 'remove' === $action ) {
-				$index = array_search( $term, $update_terms );
-				if ( isset( $update_terms[ $index ] ) ) {
-					unset( $update_terms[ $index ] );
+				// Delete all groups if they're empty
+				if ( empty( $update_terms ) ) {
+					$update_terms = null;
+				}
+
+				// Update terms for users
+				if ( $update_terms !== $terms ) {
+
+
+					$this->set_terms_for_user( $user, $taxonomy, $update_terms, true );
 				}
 			}
-
-			// Delete all groups if they're empty
-			if ( empty( $update_terms ) ) {
-				$update_terms = null;
-			}
-
-			// Update terms for users
-			if ( $update_terms !== $terms ) {
-
-
-				$this->set_terms_for_user( $user, $taxonomy, $update_terms, true );
-			}
-
-
-
-
-}
-}
+		}
 
 		// Success
 		wp_safe_redirect( admin_url( 'users.php' ) );
 		die;
-
-}
-
-}
-
 
 	}
 
@@ -694,27 +681,31 @@ if ( current_user_can( 'edit_user', $user ) ) {
 			<fieldset class="alignleft">
 				<legend class="screen-reader-text"><?php esc_html_e( 'Update Groups', $this->namespace ); ?></legend>
 
-<input name="<?php echo esc_attr( $taxonomy->name ); ?>-bulk_users_to_action" value="" type="hidden" id="<?php echo esc_attr( $taxonomy->name ); ?>-bulk_users_to_action" class="user-tax-users-input" />
+				<input name="<?php echo esc_attr( $taxonomy->name ); ?>-bulk_users_to_action" value="" type="hidden" id="<?php echo esc_attr( $taxonomy->name ); ?>-bulk_users_to_action" class="user-tax-users-input" />
 
 				<label for="<?php echo esc_attr( $taxonomy->name ); ?>-select" class="screen-reader-text">
 					<?php echo esc_html( $taxonomy->labels->name ); ?>
 				</label>
 
-<select class="tax-picker" name="<?php echo esc_attr( $this->namespace ); ?>-bulk_edit-action" id="<?php echo esc_attr( $this->namespace ); ?>-<?php echo esc_attr( $taxonomy->name ); ?>-bulk_edit-action" required="required">
-					<option value=""><?php printf( esc_html__( '%s Bulk Update', $this->namespace ), $taxonomy->labels->name ); ?></option>
+				<select class="tax-picker" name="<?php echo esc_attr( $this->namespace ); ?>-bulk_edit-action" id="<?php echo esc_attr( $this->namespace ); ?>-<?php echo esc_attr( $taxonomy->name ); ?>-bulk_edit-action" required="required">
+					<option value=""><?php printf( esc_html__( '%s Bulk Update', $this->namespace ), ($taxonomy->single_value?$taxonomy->labels->singular_name:$taxonomy->labels->name) ); ?></option>
 
-					<optgroup label="<?php esc_html_e( 'Add', $this->namespace ); ?>">
+					<?php if ( $taxonomy->single_value ) { ?>
+						<option value="unset-all"><?php printf( esc_html__( 'Remove %s', $this->namespace ), $taxonomy->labels->singular_name ) ; ?></option>
+					<?php } ?>
+
+					<optgroup label="<?php $taxonomy->single_value?esc_html_e( 'Set', $this->namespace ):esc_html_e( 'Add', $this->namespace ); ?>">
 
 						<?php foreach ( $terms as $term ) : ?>
 
-							<option value="add-<?php echo esc_attr( $term->slug ); ?>"><?php echo esc_html( $term->name ); ?></option>
+							<option value="<?php echo ($taxonomy->single_value?'set':'add') ?>-<?php echo esc_attr( $term->slug ); ?>"><?php echo esc_html( $term->name ); ?></option>
 
 						<?php endforeach; ?>
 
 					</optgroup>
 
 
-
+					<?php if ( ! $taxonomy->single_value ) { ?>
 					<optgroup label="<?php esc_html_e( 'Remove', $this->namespace ); ?>">
 
 						<?php foreach ( $terms as $term ) : ?>
@@ -724,11 +715,12 @@ if ( current_user_can( 'edit_user', $user ) ) {
 						<?php endforeach; ?>
 
 					</optgroup>
+					<?php } ?>
 
 				</select>
 
-<input id="<?php echo $this->namespace;  ?>-<?php echo $taxonomy->name;  ?>-bulk_edit-nonce" name="<?php  echo $this->namespace;  ?>-bulk_edit-nonce" value="<?php echo wp_create_nonce($this->namespace."-bulk_edit-nonce"); ?>" type="hidden" />
-<input id="<?php echo $this->namespace;  ?>-<?php echo $taxonomy->name;  ?>-bulk_edit-taxonomy" name="<?php  echo $this->namespace;  ?>-bulk_edit-taxonomy" value="<?php echo $taxonomy->name; ?>" type="hidden" />
+				<input id="<?php echo $this->namespace;  ?>-<?php echo $taxonomy->name;  ?>-bulk_edit-nonce" name="<?php  echo $this->namespace;  ?>-bulk_edit-nonce" value="<?php echo wp_create_nonce($this->namespace."-bulk_edit-nonce"); ?>" type="hidden" />
+				<input id="<?php echo $this->namespace;  ?>-<?php echo $taxonomy->name;  ?>-bulk_edit-taxonomy" name="<?php  echo $this->namespace;  ?>-bulk_edit-taxonomy" value="<?php echo $taxonomy->name; ?>" type="hidden" />
 
 				<?php submit_button( esc_html__( 'Apply' ), 'action', $taxonomy->name . '-submit', false ); ?>
 
