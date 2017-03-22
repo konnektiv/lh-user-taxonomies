@@ -35,6 +35,7 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		add_action( 'xprofile_data_before_save', array( $this , 'before_save') );
 		add_action( 'xprofile_data_before_delete', array( $this, 'before_delete') );
 
+
 		/**
 		 * Fires inside __construct() method for BP_XProfile_Field_Type_Taxonomy class.
 		 *
@@ -53,7 +54,7 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 
 		$settings = self::get_field_settings( $this->field_obj->id );
 
-		LH_User_Taxonomies_plugin::set_object_terms( $profile_data->user_id, array($profile_data->value), $settings['taxonomy'] );
+		LH_User_Taxonomies_plugin::set_object_terms( $profile_data->user_id, array($profile_data->value), $settings['taxonomy'], false, false );
 	}
 
 	function before_delete($profile_data) {
@@ -65,7 +66,7 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 
 		$terms = wp_list_pluck( LH_User_Taxonomies_plugin::get_object_terms( $profile_data->user_id, $settings['taxonomy'] ), 'slug' );
 
-		LH_User_Taxonomies_plugin::remove_object_terms( $profile_data->user_id, $terms, $settings['taxonomy'] );
+		LH_User_Taxonomies_plugin::remove_object_terms( $profile_data->user_id, $terms, $settings['taxonomy'], false );
 	}
 
 	/**

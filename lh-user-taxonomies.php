@@ -216,6 +216,43 @@ class LH_User_Taxonomies_plugin {
 		return $return;
 	}
 
+	private static function get_xprofile_field_ids_from_taxonomy( $taxonomy ) {
+		global $wpdb, $bp;
+
+		return $wpdb->get_col( $wpdb->prepare( "SELECT object_id FROM {$bp->profile->table_name_meta} WHERE object_type = 'field' AND meta_key = 'taxonomy' AND meta_value = %s", $taxonomy ) );
+	}
+
+	public static function update_xprofile_data( $user_id, $tt_ids, $taxonomy ) {
+
+		if ( ! bp_is_active( 'xprofile' ) )
+			return;
+
+		$field_ids = self::get_xprofile_field_ids_from_taxonomy( $taxonomy );
+
+		foreach ( $field_ids as $field_id ) {
+			foreach ($tt_ids as $tt_id) {
+				$term = get_term_by ( 'term_taxonomy_id', $tt_id, $taxonomy );
+				$data = new BP_XProfile_ProfileData( $field_id, $user_id );
+				$data->value = $term->slug;
+				$data->save();
+			}
+		}
+	}
+
+	public static function remove_xprofile_data( $user_id, $taxonomy ) {
+		global $wpdb, $bp;
+
+		if ( ! bp_is_active( 'xprofile' ) )
+			return;
+
+		$field_ids = self::get_xprofile_field_ids_from_taxonomy( $taxonomy );
+
+		foreach ( $field_ids as $field_id ) {
+			$data = new BP_XProfile_ProfileData( $field_id, $user_id );
+			$data->delete();
+		}
+	}
+
 	/**
 	 * Set user terms
 	 *
@@ -224,9 +261,15 @@ class LH_User_Taxonomies_plugin {
 	 *
 	 * @uses wp_set_object_terms()
 	 */
-	public static function set_object_terms( $object_id, $terms, $taxonomy, $append = false ) {
+	public static function set_object_terms( $object_id, $terms, $taxonomy, $append = false, $update_profile = true ) {
 		self::set_tables();
+
 		$return = wp_set_object_terms( $object_id, $terms, $taxonomy, $append );
+
+		if ( $update_profile ) {
+			self::update_xprofile_data( $object_id, $return, $taxonomy );
+		}
+
 		self::reset_tables();
 		return $return;
 	}
@@ -239,9 +282,13 @@ class LH_User_Taxonomies_plugin {
 	 *
 	 * @uses wp_remove_object_terms()
 	 */
-	public static function remove_object_terms( $object_id, $terms, $taxonomy ) {
+	public static function remove_object_terms( $object_id, $terms, $taxonomy, $update_profile = true ) {
 		self::set_tables();
+
 		$return = wp_remove_object_terms( $object_id, $terms, $taxonomy );
+		if ( $update_profile ) {
+			self::remove_xprofile_data( $object_id, $taxonomy );
+		}
 		self::reset_tables();
 		return $return;
 	}
@@ -255,9 +302,12 @@ class LH_User_Taxonomies_plugin {
 	 *
 	 * @uses wp_delete_object_term_relationships()
 	 */
-	public static function delete_object_term_relationships( $object_id, $taxonomies ) {
+	public static function delete_object_term_relationships( $object_id, $taxonomy, $update_profile = true ) {
 		self::set_tables();
-		$return = wp_delete_object_term_relationships( $object_id, $taxonomies );
+		$return = wp_delete_object_term_relationships( $object_id, $taxonomy );
+		if ( $update_profile ) {
+			self::remove_xprofile_data( $object_id, $taxonomy );
+		}
 		self::reset_tables();
 		return $return;
 	}
