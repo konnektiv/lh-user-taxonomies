@@ -180,6 +180,13 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 
 		$children = LH_User_Taxonomies_plugin::get_terms( $settings['taxonomy'], array( 'hide_empty' => false ) );
 
+		if ( is_wp_error( $children) ) {
+			$children = array( (object)array(
+				'name' => $children->get_error_message(),
+				'slug' => 'error' )
+			);
+		}
+
 		/**
 		 * Filters the found children for a field.
 		 *
