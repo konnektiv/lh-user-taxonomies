@@ -789,27 +789,54 @@ private function set_terms_for_user( $user_id, $taxonomy, $terms = array(), $bul
 	 * Check for current term before member query is made
 	 *
 	 */
-	public function parse_members_query( $args = '' ) {
+	public function set_current_term() {
 
 		if ( is_tax( $this->taxonomies ) ) {
 			$this->current_term = get_queried_object();
+			$this->add_members_term_cookie( $this->current_term );
+		} else {
+			$this->remove_members_term_cookie();
+		}
+	}
+
+	function get_members_term_from_cookie() {
+
+		if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
+			return false;
 		}
 
-		return $args;
-	}
+		if ( ! empty( $_POST['cookie'] ) )
+			$_BP_COOKIE = wp_parse_args( str_replace( '; ', '&', urldecode( $_POST['cookie'] ) ) );
+		else
+			$_BP_COOKIE = &$_COOKIE;
+
+		if ( ! empty( $_BP_COOKIE['bp-member-term'] ) ) {
+			return json_decode( $_BP_COOKIE['bp-member-term'] );
+		}
+
+		return false;
+    }
 
 	// add taxonomy query to bp user queries
 	function filter_member_sql( $sql, $user_query ) {
 		global $wpdb;
 
-		if ( ! $this->current_term )
+		$current_term = false;
+
+		if ( $this->current_term )
+			$current_term = $this->current_term;
+		else
+		 	$current_term = $this->get_members_term_from_cookie();
+
+
+		if ( ! $current_term )
 			return $sql;
 
 		$tax_query = new WP_Tax_Query( array(
 			array(
-				'taxonomy' => $this->current_term->taxonomy,
+				'taxonomy' => $current_term->taxonomy,
 				'field' => 'term_id',
-				'terms'    => $this->current_term->term_id,
+				'terms'    => $current_term->term_id,
 			),
 		) );
 
@@ -823,6 +850,15 @@ private function set_terms_for_user( $user_id, $taxonomy, $terms = array(), $bul
 		self::reset_tables();
 
 		return $sql;
+	}
+
+	function remove_members_term_cookie() {
+		unset( $_COOKIE['bp-member-term'] );
+  		setcookie( 'bp-member-term', '', time() - ( 15 * 60 ) );
+	}
+
+	function add_members_term_cookie( $term ) {
+		setcookie( 'bp-member-term', json_encode($term), 30 * DAYS_IN_SECONDS, '/' );
 	}
 
 	/**
@@ -855,8 +891,8 @@ private function set_terms_for_user( $user_id, $taxonomy, $terms = array(), $bul
         add_action('pre_user_query', array($this, 'user_query'));
 
         // buddypress members loop
-        add_filter( 'bp_before_has_members_parse_args', array( $this, 'parse_members_query' ), 10, 1 );
         add_filter( 'bp_user_query_uid_clauses', array( $this, 'filter_member_sql' ), 10, 2 );
+        add_action( 'template_redirect', array( $this, 'set_current_term' ) );
 
 		// Bulk edit
 		add_filter( 'views_users', array( $this, 'bulk_edit') );
