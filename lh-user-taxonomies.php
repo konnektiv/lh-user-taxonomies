@@ -786,6 +786,46 @@ private function set_terms_for_user( $user_id, $taxonomy, $terms = array(), $bul
 	}
 
 	/**
+	 * Check for current term before member query is made
+	 *
+	 */
+	public function parse_members_query( $args = '' ) {
+
+		if ( is_tax( $this->taxonomies ) ) {
+			$this->current_term = get_queried_object();
+		}
+
+		return $args;
+	}
+
+	// add taxonomy query to bp user queries
+	function filter_member_sql( $sql, $user_query ) {
+		global $wpdb;
+
+		if ( ! $this->current_term )
+			return $sql;
+
+		$tax_query = new WP_Tax_Query( array(
+			array(
+				'taxonomy' => $this->current_term->taxonomy,
+				'field' => 'term_id',
+				'terms'    => $this->current_term->term_id,
+			),
+		) );
+
+		self::set_tables();
+		$sql_clauses = $tax_query->get_sql( 'u', $user_query->uid_name );
+
+		if ( preg_match( '/' . self::$lh_term_relationships . '\.term_taxonomy_id IN \([0-9, ]+\)/', $sql_clauses['where'], $matches ) ) {
+			$clause = "u.{$user_query->uid_name} IN ( SELECT object_id FROM " . self::$lh_term_relationships . " WHERE {$matches[0]} )";
+			$sql['where'][] = $clause;
+		}
+		self::reset_tables();
+
+		return $sql;
+	}
+
+	/**
 	 * Register all the hooks and filters we can in advance
 	 * Some will need to be registered later on, as they require knowledge of the taxonomy name
 	 */
@@ -813,6 +853,10 @@ private function set_terms_for_user( $user_id, $taxonomy, $terms = array(), $bul
 		add_filter('manage_users_columns', array($this, 'lh_user_taxonomies_add_user_id_column'));
 		add_action('manage_users_custom_column', array($this, 'lh_user_taxonomies_add_taxonomy_column_content'), 10, 3);
         add_action('pre_user_query', array($this, 'user_query'));
+
+        // buddypress members loop
+        add_filter( 'bp_before_has_members_parse_args', array( $this, 'parse_members_query' ), 10, 1 );
+        add_filter( 'bp_user_query_uid_clauses', array( $this, 'filter_member_sql' ), 10, 2 );
 
 		// Bulk edit
 		add_filter( 'views_users', array( $this, 'bulk_edit') );
