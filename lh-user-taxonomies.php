@@ -97,9 +97,33 @@ class LH_User_Taxonomies_plugin {
 				$taxonomy->labels->menu_name,
 				$taxonomy->labels->menu_name,
 				$taxonomy->cap->manage_terms,
-				"edit-tags.php?taxonomy={$key}"
+				"edit-tags.php?taxonomy={$key}&object_type=user"
 			);
 		}
+	}
+
+	/**
+	 * Make sure the edit term link for the user terms
+	 * will include the object_type parameter
+	 *
+	 * @access public
+	 */
+	public function edit_term_link( $link = '', $term_id = 0, $taxonomy = '', $object_type = '' ) {
+
+		if ( empty( $taxonomy ) || ! isset( self::$taxonomies[$taxonomy] ) ||
+			 empty( $_GET['object_type'] ) || $_GET['object_type'] != 'user' ) {
+			return $link;
+		}
+
+		$args = explode('?', $link);
+		$query_args = wp_parse_args(  $args[1], array() );
+
+		if ( isset( $query_args['post_type'] ) )
+			unset( $query_args['post_type'] );
+
+		$query_args['object_type'] = 'user';
+
+		return add_query_arg( $query_args, get_admin_url( null, 'term.php' ) );
 	}
 
 	/**
@@ -112,7 +136,8 @@ class LH_User_Taxonomies_plugin {
 
 		// If we're editing one of the user taxonomies
 		// We must be within the users menu, so highlight that
-		if(!empty($_GET['taxonomy']) && $pagenow == 'edit-tags.php' && isset(self::$taxonomies[$_GET['taxonomy']])) {
+		if(!empty($_GET['taxonomy']) && ( $pagenow == 'edit-tags.php' || $pagenow == 'term.php' ) && isset(self::$taxonomies[$_GET['taxonomy']]) &&
+		   !empty($_GET['object_type']) && $_GET['object_type'] == 'user' ) {
 			$parent	= 'users.php';
 		}
 
@@ -878,6 +903,7 @@ private function set_terms_for_user( $user_id, $taxonomy, $terms = array(), $bul
 		// Menus
 		add_action('admin_menu', array($this, 'admin_menu'));
 		add_filter('parent_file', array($this, 'parent_menu'));
+		add_filter( 'get_edit_term_link', array( $this, 'edit_term_link'  ), 10, 4 );
 
 		// User Profiles
 		add_action('show_user_profile',	array($this, 'user_profile'));
