@@ -372,8 +372,6 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 				<p>
 					<label for="sync_terms_<?php echo esc_attr( $type ); ?>"><?php esc_html_e( 'Synchronise with user terms:', 'buddypress' ); ?></label>
 					<input type="checkbox" value="1" <?php checked( $settings['sync_terms'] ); ?> name="field-settings[sync_terms]" id="sync_terms_<?php echo esc_attr( $type ); ?>" >
-
-					</select>
 				</p>
 
 				<?php
