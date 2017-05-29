@@ -257,6 +257,10 @@ class LH_User_Taxonomies_plugin {
 		$field_ids = self::get_xprofile_field_ids_from_taxonomy( $taxonomy );
 
 		foreach ( $field_ids as $field_id ) {
+
+			if ( ! BP_XProfile_Field_Type_Taxonomy::is_sync_field( $field_id ) )
+				continue;
+
 			foreach ($tt_ids as $tt_id) {
 				$term = get_term_by ( 'term_taxonomy_id', $tt_id, $taxonomy );
 				$data = new BP_XProfile_ProfileData( $field_id, $user_id );
@@ -275,6 +279,10 @@ class LH_User_Taxonomies_plugin {
 		$field_ids = self::get_xprofile_field_ids_from_taxonomy( $taxonomy );
 
 		foreach ( $field_ids as $field_id ) {
+
+			if ( ! BP_XProfile_Field_Type_Taxonomy::is_sync_field( $field_id ) )
+				continue;
+
 			$data = new BP_XProfile_ProfileData( $field_id, $user_id );
 			$data->delete();
 		}

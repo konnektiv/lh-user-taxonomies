@@ -54,7 +54,8 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 
 		$settings = self::get_field_settings( $this->field_obj->id );
 
-		LH_User_Taxonomies_plugin::set_object_terms( $profile_data->user_id, array($profile_data->value), $settings['taxonomy'], false, false );
+		if ( $settings['sync_terms'] )
+			LH_User_Taxonomies_plugin::set_object_terms( $profile_data->user_id, array($profile_data->value), $settings['taxonomy'], false, false );
 	}
 
 	function before_delete($profile_data) {
@@ -66,7 +67,8 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 
 		$terms = wp_list_pluck( LH_User_Taxonomies_plugin::get_object_terms( $profile_data->user_id, $settings['taxonomy'] ), 'slug' );
 
-		LH_User_Taxonomies_plugin::remove_object_terms( $profile_data->user_id, $terms, $settings['taxonomy'], false );
+		if ( $settings['sync_terms'] )
+			LH_User_Taxonomies_plugin::remove_object_terms( $profile_data->user_id, $terms, $settings['taxonomy'], false );
 	}
 
 	/**
@@ -80,6 +82,7 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 	public static function get_field_settings( $field_id ) {
 		$defaults = array(
 			'taxonomy'          => null,
+			'sync_terms'		=> false,
 		);
 
 		$settings = array();
@@ -96,6 +99,11 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		return $settings;
 	}
 
+	public static function is_sync_field( $field_id ) {
+		$settings = self::get_field_settings( $field_id );
+		return (bool) $settings['sync_terms'];
+	}
+
 	/**
 	 * Save settings from the field edit screen in the Dashboard.
 	 *
@@ -110,6 +118,9 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		foreach ( array_keys( $existing_settings ) as $setting ) {
 			switch ( $setting ) {
 
+				case 'sync_terms':
+					$saved_settings[ $setting ] = ( isset( $settings[ $setting ] ) );
+					break;
 				default :
 					if ( isset( $settings[ $setting ] ) ) {
 						$saved_settings[ $setting ] = $settings[ $setting ];
@@ -215,7 +226,7 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 	 */
 	public function edit_field_options_html( array $args = array() ) {
 		$settings = self::get_field_settings( $this->field_obj->id );
-		$original_option_values = wp_list_pluck( LH_User_Taxonomies_plugin::get_object_terms( $args['user_id'], $settings['taxonomy'] ), 'slug' );
+		$original_option_values = maybe_unserialize( BP_XProfile_ProfileData::get_value_byid( $this->field_obj->id, $args['user_id'] ) );
 		$tax = get_taxonomy( $settings['taxonomy'] );
 
 		$options = $this->get_children();
@@ -295,10 +306,10 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 
 	public static function display_filter( $field_value, $field_id = '' ) {
 		$settings = self::get_field_settings( $field_id );
-		$terms = LH_User_Taxonomies_plugin::get_object_terms( bp_displayed_user_id(), $settings['taxonomy'] );
+		$term = get_term_by( 'slug', $field_value, $settings['taxonomy'] );
 
-		if ( ! empty( $terms ) ) {
-			$field_value = implode(', ', wp_list_pluck( $terms, 'name' ) );
+		if ( ! empty( $term ) ) {
+			$field_value = $term->name;
 		}
 		return $field_value;
 	}
@@ -356,6 +367,12 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 						<?php foreach ($GLOBALS['lh_user_taxonomies_instance']::$taxonomies as $taxonomy => $tax) { ?>
 							<option value="<?php echo $taxonomy ?>" <?php selected( $taxonomy, $settings['taxonomy'] ); ?>><?php echo $tax->labels->name ?></option>
 						<?php } ?>
+					</select>
+				</p>
+				<p>
+					<label for="sync_terms_<?php echo esc_attr( $type ); ?>"><?php esc_html_e( 'Synchronise with user terms:', 'buddypress' ); ?></label>
+					<input type="checkbox" value="1" <?php checked( $settings['sync_terms'] ); ?> name="field-settings[sync_terms]" id="sync_terms_<?php echo esc_attr( $type ); ?>" >
+
 					</select>
 				</p>
 
