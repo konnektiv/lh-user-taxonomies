@@ -83,6 +83,7 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		$defaults = array(
 			'taxonomy'          => null,
 			'sync_terms'		=> false,
+			'empty_label'		=> esc_html__( 'Choose your %s', 'buddypress' )
 		);
 
 		$settings = array();
@@ -230,7 +231,9 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		$tax = get_taxonomy( $settings['taxonomy'] );
 
 		$options = $this->get_children();
-		$html    = '<option value="">' . /* translators: no option picked in select box */ sprintf( esc_html__( 'Choose your %s', 'buddypress' ), $tax->labels->singular_name ) . '</option>';
+		$empty_label = /* translators: no option picked in select box */ sprintf( $settings['empty_label'], $tax->labels->singular_name );
+
+		$html    = '<option value="">' . $empty_label . '</option>';
 
 		if ( empty( $original_option_values ) && !empty( $_POST['field_' . $this->field_obj->id] ) ) {
 			$original_option_values = sanitize_text_field(  $_POST['field_' . $this->field_obj->id] );
@@ -368,6 +371,10 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 							<option value="<?php echo $taxonomy ?>" <?php selected( $taxonomy, $settings['taxonomy'] ); ?>><?php echo $tax->labels->name ?></option>
 						<?php } ?>
 					</select>
+				</p>
+				<p>
+					<label for="empty_label_<?php echo esc_attr( $type ); ?>"><?php esc_html_e( 'Empty Label:', 'buddypress' ); ?></label>
+					<input type="text" value="<?php echo $settings['empty_label'] ?>" name="field-settings[empty_label]" id="empty_label_<?php echo esc_attr( $type ); ?>" >
 				</p>
 				<p>
 					<label for="sync_terms_<?php echo esc_attr( $type ); ?>"><?php esc_html_e( 'Synchronise with user terms:', 'buddypress' ); ?></label>
