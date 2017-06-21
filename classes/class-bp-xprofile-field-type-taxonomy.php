@@ -54,8 +54,11 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 
 		$settings = self::get_field_settings( $this->field_obj->id );
 
-		if ( $settings['sync_terms'] )
-			LH_User_Taxonomies_plugin::set_object_terms( $profile_data->user_id, array($profile_data->value), $settings['taxonomy'], false, false );
+		if ( $settings['sync_terms'] ) {
+			$value = maybe_unserialize( $profile_data->value );
+			$value = is_array( $value ) ? $value : array( $value );
+			LH_User_Taxonomies_plugin::set_object_terms( $profile_data->user_id, $value, $settings['taxonomy'], false, false );
+		}
 	}
 
 	function before_delete($profile_data) {
@@ -65,10 +68,10 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 
 		$settings = self::get_field_settings( $this->field_obj->id );
 
-		$terms = wp_list_pluck( LH_User_Taxonomies_plugin::get_object_terms( $profile_data->user_id, $settings['taxonomy'] ), 'slug' );
-
-		if ( $settings['sync_terms'] )
+		if ( $settings['sync_terms'] ) {
+			$terms = wp_list_pluck( LH_User_Taxonomies_plugin::get_object_terms( $profile_data->user_id, $settings['taxonomy'] ), 'slug' );
 			LH_User_Taxonomies_plugin::remove_object_terms( $profile_data->user_id, $terms, $settings['taxonomy'], false );
+		}
 	}
 
 	/**
@@ -83,6 +86,7 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		$defaults = array(
 			'taxonomy'          => null,
 			'sync_terms'		=> false,
+			'multiple'			=> false,
 			'empty_label'		=> esc_html__( 'Choose your %s', 'buddypress' )
 		);
 
@@ -233,7 +237,9 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		$options = $this->get_children();
 		$empty_label = /* translators: no option picked in select box */ sprintf( $settings['empty_label'], $tax->labels->singular_name );
 
-		$html    = '<option value="">' . $empty_label . '</option>';
+		if ( ! $settings['multiple'] ) {
+			$html    = '<option value="">' . $empty_label . '</option>';
+		}
 
 		if ( empty( $original_option_values ) && !empty( $_POST['field_' . $this->field_obj->id] ) ) {
 			$original_option_values = sanitize_text_field(  $_POST['field_' . $this->field_obj->id] );
@@ -284,6 +290,33 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		echo $html;
 	}
 
+	/** Protected *************************************************************/
+
+	/**
+	 * Get a sanitised and escaped string of the edit field's HTML elements and attributes.
+	 *
+	 * Must be used inside the {@link bp_profile_fields()} template loop.
+	 * This method was intended to be static but couldn't be because php.net/lsb/ requires PHP >= 5.3.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param array $properties Optional key/value array of attributes for this edit field.
+	 * @return string
+	 */
+	protected function get_edit_field_html_elements( array $properties = array() ) {
+		global $field;
+		$settings = self::get_field_settings( $field->id );
+
+		if ( isset( $settings['multiple'] ) && $settings['multiple'] ) {
+			$properties['multiple'] = 'true';
+			$properties['id']       = bp_get_the_profile_field_input_name() . '[]';
+			$properties['name']     = bp_get_the_profile_field_input_name() . '[]';
+		}
+
+		return parent::get_edit_field_html_elements( $properties );
+	}
+
+
 	/**
 	 * Output HTML for this field type on the wp-admin Profile Fields screen.
 	 *
@@ -309,12 +342,15 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 
 	public static function display_filter( $field_value, $field_id = '' ) {
 		$settings = self::get_field_settings( $field_id );
-		$term = get_term_by( 'slug', $field_value, $settings['taxonomy'] );
+		$values = explode(',', $field_value);
+		$terms = array();
 
-		if ( ! empty( $term ) ) {
-			$field_value = $term->name;
+		foreach ( $values as $value ) {
+			$term = get_term_by( 'slug', $value, $settings['taxonomy'] );
+			$terms[] = empty( $term ) ? $value : $term->name;
 		}
-		return $field_value;
+
+		return implode( ',', $terms );
 	}
 
 	/**
@@ -379,6 +415,10 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 				<p>
 					<label for="sync_terms_<?php echo esc_attr( $type ); ?>"><?php esc_html_e( 'Synchronise with user terms:', 'buddypress' ); ?></label>
 					<input type="checkbox" value="1" <?php checked( $settings['sync_terms'] ); ?> name="field-settings[sync_terms]" id="sync_terms_<?php echo esc_attr( $type ); ?>" >
+				</p>
+				<p>
+					<label for="multiple_<?php echo esc_attr( $type ); ?>"><?php esc_html_e( 'Allow multiple values:', 'buddypress' ); ?></label>
+					<input type="checkbox" value="1" <?php checked( $settings['multiple'] ); ?> name="field-settings[multiple]" id="multiple_<?php echo esc_attr( $type ); ?>" >
 				</p>
 
 				<?php
