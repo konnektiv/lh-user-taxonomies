@@ -84,21 +84,22 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		if ( $profile_data->field_id != $this->field_obj->id )
 			return;
 
+		if ( ! self::is_sync_field( $profile_data->field_id ) )
+			return;
+
 		$settings = self::get_field_settings( $this->field_obj->id );
 
-		if ( $settings['sync_terms'] ) {
+		$new_terms = $this->maybe_unserialize_terms( $profile_data->value );
 
-			$new_terms = $this->maybe_unserialize_terms( $profile_data->value );
+		// get previous terms
+		$old_terms = $this->get_previous_terms( $profile_data, $settings, $new_terms );
 
-			// get previous terms
-			$old_terms = $this->get_previous_terms( $profile_data, $settings, $new_terms );
+		// remove old terms
+		LH_User_Taxonomies_plugin::remove_object_terms( $profile_data->user_id, $old_terms, $settings['taxonomy'], false );
 
-			// remove old terms
-			LH_User_Taxonomies_plugin::remove_object_terms( $profile_data->user_id, $old_terms, $settings['taxonomy'], false );
+		// set new terms
+		LH_User_Taxonomies_plugin::set_object_terms( $profile_data->user_id, $new_terms, $settings['taxonomy'], true, false );
 
-			// set new terms
-			LH_User_Taxonomies_plugin::set_object_terms( $profile_data->user_id, $new_terms, $settings['taxonomy'], true, false );
-		}
 	}
 
 	function before_delete( $profile_data ) {
@@ -106,13 +107,14 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		if ( $profile_data->field_id != $this->field_obj->id )
 			return;
 
+		if ( ! self::is_sync_field( $profile_data->field_id ) )
+			return;
+
 		$settings = self::get_field_settings( $this->field_obj->id );
 
-		if ( $settings['sync_terms'] ) {
-			$terms = $this->get_previous_terms( $profile_data, $settings );
+		$terms = $this->get_previous_terms( $profile_data, $settings );
 
-			LH_User_Taxonomies_plugin::remove_object_terms( $profile_data->user_id, $terms, $settings['taxonomy'], false );
-		}
+		LH_User_Taxonomies_plugin::remove_object_terms( $profile_data->user_id, $terms, $settings['taxonomy'], false );
 	}
 
 	/**
