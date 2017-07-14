@@ -47,6 +47,38 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		do_action( 'BP_XProfile_Field_Type_Taxonomy', $this );
 	}
 
+	private function maybe_unserialize_terms( $terms ) {
+		$terms = maybe_unserialize( $terms );
+		return is_array( $terms ) ? $terms : array( $terms );
+	}
+
+	private function get_previous_terms( $profile_data, $settings, $new_terms = array() ) {
+		$old_terms = BP_XProfile_ProfileData::get_data_for_user( $profile_data->user_id, array( $profile_data->field_id ) );
+
+		$old_terms = reset( $old_terms );
+		$old_terms = $old_terms->value;
+		$old_terms = $this->maybe_unserialize_terms( $old_terms );
+
+		// check if old terms are set by any other profile field fot this taxonomy
+		$field_ids = LH_User_Taxonomies_plugin::get_xprofile_field_ids_from_taxonomy( $settings['taxonomy'] );
+
+		// only get fields which are synced with the taxonomy
+		$field_ids = array_filter( $field_ids, array( 'BP_XProfile_Field_Type_Taxonomy', 'is_sync_field' ) );
+
+		$other_terms = array();
+		foreach ( $field_ids as $field_id ) {
+			if ( $field_id == $profile_data->field_id )
+				continue;
+
+			$data = new BP_XProfile_ProfileData( $field_id, $profile_data->user_id );
+			$other_terms = array_merge( $other_terms, $this->maybe_unserialize_terms( $data->value ) );
+		}
+
+		// only return terms which are not set by other fields and which are not in
+		// new terms
+		return array_diff( $old_terms, $other_terms, $new_terms );
+	}
+
 	function before_save($profile_data) {
 
 		if ( $profile_data->field_id != $this->field_obj->id )
@@ -55,13 +87,21 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		$settings = self::get_field_settings( $this->field_obj->id );
 
 		if ( $settings['sync_terms'] ) {
-			$value = maybe_unserialize( $profile_data->value );
-			$value = is_array( $value ) ? $value : array( $value );
-			LH_User_Taxonomies_plugin::set_object_terms( $profile_data->user_id, $value, $settings['taxonomy'], false, false );
+
+			$new_terms = $this->maybe_unserialize_terms( $profile_data->value );
+
+			// get previous terms
+			$old_terms = $this->get_previous_terms( $profile_data, $settings, $new_terms );
+
+			// remove old terms
+			LH_User_Taxonomies_plugin::remove_object_terms( $profile_data->user_id, $old_terms, $settings['taxonomy'], false );
+
+			// set new terms
+			LH_User_Taxonomies_plugin::set_object_terms( $profile_data->user_id, $new_terms, $settings['taxonomy'], true, false );
 		}
 	}
 
-	function before_delete($profile_data) {
+	function before_delete( $profile_data ) {
 
 		if ( $profile_data->field_id != $this->field_obj->id )
 			return;
@@ -69,7 +109,8 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		$settings = self::get_field_settings( $this->field_obj->id );
 
 		if ( $settings['sync_terms'] ) {
-			$terms = wp_list_pluck( LH_User_Taxonomies_plugin::get_object_terms( $profile_data->user_id, $settings['taxonomy'] ), 'slug' );
+			$terms = $this->get_previous_terms( $profile_data, $settings );
+
 			LH_User_Taxonomies_plugin::remove_object_terms( $profile_data->user_id, $terms, $settings['taxonomy'], false );
 		}
 	}
