@@ -243,7 +243,7 @@ class LH_User_Taxonomies_plugin {
 		return $return;
 	}
 
-	private static function get_xprofile_field_ids_from_taxonomy( $taxonomy ) {
+	public static function get_xprofile_field_ids_from_taxonomy( $taxonomy ) {
 		global $wpdb, $bp;
 
 		return $wpdb->get_col( $wpdb->prepare( "SELECT object_id FROM {$bp->profile->table_name_meta} WHERE object_type = 'field' AND meta_key = 'taxonomy' AND meta_value = %s", $taxonomy ) );
