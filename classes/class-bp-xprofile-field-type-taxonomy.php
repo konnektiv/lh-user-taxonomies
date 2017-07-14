@@ -152,6 +152,11 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		return (bool) $settings['sync_terms'];
 	}
 
+	public static function is_multiple_field( $field_id ) {
+		$settings = self::get_field_settings( $field_id );
+		return (bool) $settings['multiple'];
+	}
+
 	/**
 	 * Save settings from the field edit screen in the Dashboard.
 	 *

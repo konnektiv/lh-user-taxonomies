@@ -256,21 +256,25 @@ class LH_User_Taxonomies_plugin {
 
 		$field_ids = self::get_xprofile_field_ids_from_taxonomy( $taxonomy );
 
+		// only get fields which are synced with the taxonomy
+		$field_ids = array_filter( $field_ids, array( 'BP_XProfile_Field_Type_Taxonomy', 'is_sync_field' ) );
+
 		foreach ( $field_ids as $field_id ) {
+			$data = new BP_XProfile_ProfileData( $field_id, $user_id );
 
-			if ( ! BP_XProfile_Field_Type_Taxonomy::is_sync_field( $field_id ) )
-				continue;
-
-			foreach ($tt_ids as $tt_id) {
+			$terms = array_map( function( $tt_id ) use ( $taxonomy ) {
 				$term = get_term_by ( 'term_taxonomy_id', $tt_id, $taxonomy );
-				$data = new BP_XProfile_ProfileData( $field_id, $user_id );
-				$data->value = $term->slug;
-				$data->save();
-			}
+				return $term->slug;
+			}, $tt_ids );
+
+			$data->value =  BP_XProfile_Field_Type_Taxonomy::is_multiple_field( $field_id ) ?
+				$terms : reset( $terms );
+
+			$data->save();
 		}
 	}
 
-	public static function remove_xprofile_data( $user_id, $taxonomy ) {
+	public static function delete_xprofile_data( $user_id, $taxonomy ) {
 		global $wpdb, $bp;
 
 		if ( ! bp_is_active( 'xprofile' ) )
@@ -278,10 +282,10 @@ class LH_User_Taxonomies_plugin {
 
 		$field_ids = self::get_xprofile_field_ids_from_taxonomy( $taxonomy );
 
-		foreach ( $field_ids as $field_id ) {
+		// only get fields which are synced with the taxonomy
+		$field_ids = array_filter( $field_ids, array( 'BP_XProfile_Field_Type_Taxonomy', 'is_sync_field' ) );
 
-			if ( ! BP_XProfile_Field_Type_Taxonomy::is_sync_field( $field_id ) )
-				continue;
+		foreach ( $field_ids as $field_id ) {
 
 			$data = new BP_XProfile_ProfileData( $field_id, $user_id );
 			$data->delete();
@@ -322,7 +326,7 @@ class LH_User_Taxonomies_plugin {
 
 		$return = wp_remove_object_terms( $object_id, $terms, $taxonomy );
 		if ( $update_profile ) {
-			self::remove_xprofile_data( $object_id, $taxonomy );
+			self::delete_xprofile_data( $object_id, $taxonomy );
 		}
 		self::reset_tables();
 		return $return;
@@ -341,7 +345,7 @@ class LH_User_Taxonomies_plugin {
 		self::set_tables();
 		$return = wp_delete_object_term_relationships( $object_id, $taxonomy );
 		if ( $update_profile ) {
-			self::remove_xprofile_data( $object_id, $taxonomy );
+			self::delete_xprofile_data( $object_id, $taxonomy );
 		}
 		self::reset_tables();
 		return $return;
