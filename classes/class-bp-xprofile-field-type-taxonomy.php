@@ -178,6 +178,8 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 			switch ( $setting ) {
 
 				case 'sync_terms':
+				case 'sync_terms_to_profile':
+				case 'multiple':
 					$saved_settings[ $setting ] = ( isset( $settings[ $setting ] ) );
 					break;
 				default :
