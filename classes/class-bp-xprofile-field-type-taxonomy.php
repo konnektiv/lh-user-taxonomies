@@ -63,7 +63,7 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		$field_ids = LH_User_Taxonomies_plugin::get_xprofile_field_ids_from_taxonomy( $settings['taxonomy'] );
 
 		// only get fields which are synced with the taxonomy
-		$field_ids = array_filter( $field_ids, array( 'BP_XProfile_Field_Type_Taxonomy', 'is_sync_field' ) );
+		$field_ids = array_filter( $field_ids, array( 'BP_XProfile_Field_Type_Taxonomy', 'is_sync_to_terms_field' ) );
 
 		$other_terms = array();
 		foreach ( $field_ids as $field_id ) {
@@ -84,7 +84,7 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		if ( $profile_data->field_id != $this->field_obj->id )
 			return;
 
-		if ( ! self::is_sync_field( $profile_data->field_id ) )
+		if ( ! self::is_sync_to_terms_field( $profile_data->field_id ) )
 			return;
 
 		$settings = self::get_field_settings( $this->field_obj->id );
@@ -107,7 +107,7 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		if ( $profile_data->field_id != $this->field_obj->id )
 			return;
 
-		if ( ! self::is_sync_field( $profile_data->field_id ) )
+		if ( ! self::is_sync_to_terms_field( $profile_data->field_id ) )
 			return;
 
 		$settings = self::get_field_settings( $this->field_obj->id );
@@ -129,6 +129,7 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		$defaults = array(
 			'taxonomy'          => null,
 			'sync_terms'		=> false,
+			'sync_terms_to_profile' => false,
 			'multiple'			=> false,
 			'empty_label'		=> esc_html__( 'Choose your %s', 'buddypress' )
 		);
@@ -147,9 +148,14 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		return $settings;
 	}
 
-	public static function is_sync_field( $field_id ) {
+	public static function is_sync_to_terms_field( $field_id ) {
 		$settings = self::get_field_settings( $field_id );
 		return (bool) $settings['sync_terms'];
+	}
+
+	public static function is_sync_to_profile_field( $field_id ) {
+		$settings = self::get_field_settings( $field_id );
+		return (bool) $settings['sync_terms_to_profile'];
 	}
 
 	public static function is_multiple_field( $field_id ) {
@@ -461,8 +467,12 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 					<input type="text" value="<?php echo $settings['empty_label'] ?>" name="field-settings[empty_label]" id="empty_label_<?php echo esc_attr( $type ); ?>" >
 				</p>
 				<p>
-					<label for="sync_terms_<?php echo esc_attr( $type ); ?>"><?php esc_html_e( 'Synchronise with user terms:', 'buddypress' ); ?></label>
+					<label for="sync_terms_<?php echo esc_attr( $type ); ?>"><?php esc_html_e( 'Synchronise profile field to user terms:', 'buddypress' ); ?></label>
 					<input type="checkbox" value="1" <?php checked( $settings['sync_terms'] ); ?> name="field-settings[sync_terms]" id="sync_terms_<?php echo esc_attr( $type ); ?>" >
+				</p>
+				<p>
+					<label for="sync_terms_to_profile_<?php echo esc_attr( $type ); ?>"><?php esc_html_e( 'Synchronise user terms to profile field:', 'buddypress' ); ?></label>
+					<input type="checkbox" value="1" <?php checked( $settings['sync_terms_to_profile'] ); ?> name="field-settings[sync_terms_to_profile]" id="sync_terms_to_profile_<?php echo esc_attr( $type ); ?>" >
 				</p>
 				<p>
 					<label for="multiple_<?php echo esc_attr( $type ); ?>"><?php esc_html_e( 'Allow multiple values:', 'buddypress' ); ?></label>

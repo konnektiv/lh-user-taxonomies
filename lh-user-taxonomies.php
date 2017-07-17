@@ -257,7 +257,7 @@ class LH_User_Taxonomies_plugin {
 		$field_ids = self::get_xprofile_field_ids_from_taxonomy( $taxonomy );
 
 		// only get fields which are synced with the taxonomy
-		$field_ids = array_filter( $field_ids, array( 'BP_XProfile_Field_Type_Taxonomy', 'is_sync_field' ) );
+		$field_ids = array_filter( $field_ids, array( 'BP_XProfile_Field_Type_Taxonomy', 'is_sync_to_profile_field' ) );
 
 		foreach ( $field_ids as $field_id ) {
 			$data = new BP_XProfile_ProfileData( $field_id, $user_id );
@@ -283,7 +283,7 @@ class LH_User_Taxonomies_plugin {
 		$field_ids = self::get_xprofile_field_ids_from_taxonomy( $taxonomy );
 
 		// only get fields which are synced with the taxonomy
-		$field_ids = array_filter( $field_ids, array( 'BP_XProfile_Field_Type_Taxonomy', 'is_sync_field' ) );
+		$field_ids = array_filter( $field_ids, array( 'BP_XProfile_Field_Type_Taxonomy', 'is_sync_to_profile_field' ) );
 
 		foreach ( $field_ids as $field_id ) {
 
