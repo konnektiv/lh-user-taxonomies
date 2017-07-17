@@ -842,16 +842,19 @@ private function set_terms_for_user( $user_id, $taxonomy, $terms = array(), $bul
 			return false;
 		}
 
-		if ( ! empty( $_POST['cookie'] ) )
-			$_BP_COOKIE = wp_parse_args( str_replace( '; ', '&', urldecode( $_POST['cookie'] ) ) );
-		else
-			$_BP_COOKIE = &$_COOKIE;
+		self::start_session();
 
-		if ( ! empty( $_BP_COOKIE['bp-member-term'] ) ) {
-			return json_decode( $_BP_COOKIE['bp-member-term'] );
+		if( isset( $_SESSION['bp-member-term'] ) ) {
+			return json_decode( $_SESSION['bp-member-term'] );
 		}
 
 		return false;
+    }
+
+    static function start_session() {
+	    if( !session_id() ) {
+	        session_start();
+	    }
     }
 
 	// add taxonomy query to bp user queries
@@ -890,12 +893,13 @@ private function set_terms_for_user( $user_id, $taxonomy, $terms = array(), $bul
 	}
 
 	function remove_members_term_cookie() {
-		unset( $_COOKIE['bp-member-term'] );
-  		setcookie( 'bp-member-term', '', time() - ( 15 * 60 ) );
+		self::start_session();
+  		unset( $_SESSION['bp-member-term'] );
 	}
 
 	function add_members_term_cookie( $term ) {
-		setcookie( 'bp-member-term', json_encode($term), 30 * DAYS_IN_SECONDS, '/' );
+		self::start_session();
+		$_SESSION['bp-member-term'] = json_encode($term);
 	}
 
 	/**
