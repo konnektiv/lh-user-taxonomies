@@ -171,13 +171,18 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 	 * @return bool True on success.
 	 */
 	public function admin_save_settings( $field_id, $settings ) {
+		global $wpdb, $bp;
+
 		$existing_settings = self::get_field_settings( $field_id );
+		$add_to_terms = false;
 
 		$saved_settings = array();
 		foreach ( array_keys( $existing_settings ) as $setting ) {
 			switch ( $setting ) {
 
 				case 'sync_terms':
+					$add_to_terms = isset( $settings[ $setting ] ) && ! $existing_settings[ $setting ];
+
 				case 'sync_terms_to_profile':
 				case 'multiple':
 					$saved_settings[ $setting ] = ( isset( $settings[ $setting ] ) );
@@ -192,6 +197,17 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 
 		foreach ( $saved_settings as $setting_key => $setting_value ) {
 			bp_xprofile_update_meta( $field_id, 'field', $setting_key, $setting_value );
+		}
+
+		// if sync to terms has been switched on, set terms from profile data
+		if ( $add_to_terms ) {
+			$results = $wpdb->get_results( "SELECT user_id, value FROM {$bp->profile->table_name_data} WHERE field_id = $field_id" );
+
+			foreach ( $results as $result ) {
+				$terms = $this->maybe_unserialize_terms( $result->value );
+
+				LH_User_Taxonomies_plugin::set_object_terms( $result->user_id, $terms, $saved_settings['taxonomy'], true, false );
+			}
 		}
 
 		return true;
