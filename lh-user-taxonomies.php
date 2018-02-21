@@ -823,86 +823,6 @@ private function set_terms_for_user( $user_id, $taxonomy, $terms = array(), $bul
 	}
 
 	/**
-	 * Check for current term before member query is made
-	 *
-	 */
-	public function set_current_term() {
-
-		if ( is_tax( $this->taxonomies ) ) {
-			$this->current_term = get_queried_object();
-			$this->add_members_term_cookie( $this->current_term );
-		} else {
-			$this->remove_members_term_cookie();
-		}
-	}
-
-	function get_members_term_from_cookie() {
-
-		if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
-			return false;
-		}
-
-		self::start_session();
-
-		if( isset( $_SESSION['bp-member-term'] ) ) {
-			return json_decode( $_SESSION['bp-member-term'] );
-		}
-
-		return false;
-    }
-
-    static function start_session() {
-	    if( !session_id() ) {
-	        session_start();
-	    }
-    }
-
-	// add taxonomy query to bp user queries
-	function filter_member_sql( $sql, $user_query ) {
-		global $wpdb;
-
-		$current_term = false;
-
-		if ( $this->current_term )
-			$current_term = $this->current_term;
-		else
-		 	$current_term = $this->get_members_term_from_cookie();
-
-
-		if ( ! $current_term )
-			return $sql;
-
-		$tax_query = new WP_Tax_Query( array(
-			array(
-				'taxonomy' => $current_term->taxonomy,
-				'field' => 'term_id',
-				'terms'    => $current_term->term_id,
-			),
-		) );
-
-		self::set_tables();
-		$sql_clauses = $tax_query->get_sql( 'u', $user_query->uid_name );
-
-		if ( preg_match( '/' . self::$lh_term_relationships . '\.term_taxonomy_id IN \([0-9, ]+\)/', $sql_clauses['where'], $matches ) ) {
-			$clause = "u.{$user_query->uid_name} IN ( SELECT object_id FROM " . self::$lh_term_relationships . " WHERE {$matches[0]} )";
-			$sql['where'][] = $clause;
-		}
-		self::reset_tables();
-
-		return $sql;
-	}
-
-	function remove_members_term_cookie() {
-		self::start_session();
-  		unset( $_SESSION['bp-member-term'] );
-	}
-
-	function add_members_term_cookie( $term ) {
-		self::start_session();
-		$_SESSION['bp-member-term'] = json_encode($term);
-	}
-
-	/**
 	 * Register all the hooks and filters we can in advance
 	 * Some will need to be registered later on, as they require knowledge of the taxonomy name
 	 */
@@ -931,10 +851,6 @@ private function set_terms_for_user( $user_id, $taxonomy, $terms = array(), $bul
 		add_filter('manage_users_columns', array($this, 'lh_user_taxonomies_add_user_id_column'));
 		add_action('manage_users_custom_column', array($this, 'lh_user_taxonomies_add_taxonomy_column_content'), 10, 3);
         add_action('pre_user_query', array($this, 'user_query'));
-
-        // buddypress members loop
-        add_filter( 'bp_user_query_uid_clauses', array( $this, 'filter_member_sql' ), 10, 2 );
-        add_action( 'template_redirect', array( $this, 'set_current_term' ) );
 
 		// Bulk edit
 		add_filter( 'views_users', array( $this, 'bulk_edit') );
