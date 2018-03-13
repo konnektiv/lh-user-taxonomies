@@ -236,9 +236,9 @@ class LH_User_Taxonomies_plugin {
 	 *
 	 * @uses wp_get_object_terms()
 	 */
-	public static function get_object_terms( $user_id, $taxonomy ) {
+	public static function get_object_terms( $user_id, $taxonomy, $args = array() ) {
 		self::set_tables();
-		$return = wp_get_object_terms( $user_id, $taxonomy );
+		$return = wp_get_object_terms( $user_id, $taxonomy, $args );
 		self::reset_tables();
 		return $return;
 	}
