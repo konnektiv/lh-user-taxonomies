@@ -55,12 +55,18 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		return is_array( $terms ) ? $terms : array( $terms );
 	}
 
-	private static function get_previous_terms( $profile_data, $settings, $new_terms = array() ) {
-		$old_terms = BP_XProfile_ProfileData::get_data_for_user( $profile_data->user_id, array( $profile_data->field_id ) );
+	private static function get_current_terms( $profile_data ) {
+		$terms = BP_XProfile_ProfileData::get_data_for_user( $profile_data->user_id, array( $profile_data->field_id ) );
 
-		$old_terms = reset( $old_terms );
-		$old_terms = $old_terms->value;
-		$old_terms = self::maybe_unserialize_terms( $old_terms );
+		$terms = reset( $terms );
+		$terms = $terms->value;
+		return self::maybe_unserialize_terms( $terms );
+	}
+
+	private static function get_terms_to_delete( $profile_data, $settings, $old_terms = null, $new_terms = array() ) {
+
+		if ( ! $old_terms )
+			$old_terms = self::get_current_terms( $profile_data );
 
 		// check if old terms are set by any other profile field fot this taxonomy
 		$field_ids = LH_User_Taxonomies_plugin::get_xprofile_field_ids_from_taxonomy( $settings['taxonomy'] );
@@ -91,8 +97,15 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 
 		$new_terms = self::maybe_unserialize_terms( $profile_data->value );
 
-		// get previous terms
-		$old_terms = self::get_previous_terms( $profile_data, $settings, $new_terms );
+		// get current terms
+		$current_terms = self::get_current_terms( $profile_data );
+
+		// nothing to do
+		if ( $new_terms == $current_terms )
+			return;
+
+		// get terms to delete
+		$old_terms = self::get_terms_to_delete( $profile_data, $settings, $current_terms, $new_terms );
 
 		// remove old terms
 		LH_User_Taxonomies_plugin::remove_object_terms( $profile_data->user_id, $old_terms, $settings['taxonomy'], false );
@@ -109,7 +122,7 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 
 		$settings = self::get_field_settings( $profile_data->field_id );
 
-		$terms = self::get_previous_terms( $profile_data, $settings );
+		$terms = self::get_terms_to_delete( $profile_data, $settings );
 
 		LH_User_Taxonomies_plugin::remove_object_terms( $profile_data->user_id, $terms, $settings['taxonomy'], false );
 	}
