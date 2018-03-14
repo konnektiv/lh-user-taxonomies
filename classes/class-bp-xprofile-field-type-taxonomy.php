@@ -328,6 +328,12 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		}
 
 		$option_values = ( $original_option_values ) ? (array) $original_option_values : array();
+
+		$option_values = array_map( function( $slug ) use ( $settings ) {
+			$term = get_term_by( 'slug', $slug, $settings['taxonomy'] );
+			return $term->slug;
+		}, $option_values );
+
 		for ( $k = 0, $count = count( $options ); $k < $count; ++$k ) {
 			$selected = '';
 
