@@ -228,6 +228,48 @@ class LH_User_Taxonomies_plugin {
 		$wpdb->term_relationships = self::$wp_term_relationships;
 	}
 
+	static function get_term_adjust_id( $term ) {
+
+		/** @var WPML_Term_Translation $wpml_term_translations */
+		/** @var WPML_Post_Translation $wpml_post_translations */
+		global $sitepress, $icl_adjust_id_url_filter_off, $wpml_term_translations, $wpml_post_translations;
+		if ( $icl_adjust_id_url_filter_off || ! $sitepress->get_setting( 'auto_adjust_ids' ) ) {
+			return $term;
+		} // special cases when we need the category in a different language
+
+		// exception: don't filter when called from get_permalink. When category parents are determined
+		$debug_backtrace = $sitepress->get_backtrace( 7 ); //Limit to first 7 stack frames, since 6 is the highest index we use
+		if ( ( isset( $debug_backtrace[5]['function'] )
+		       && $debug_backtrace[5]['function'] === 'get_category_parents' )
+		     || ( isset( $debug_backtrace[6]['function'] )
+		          && $debug_backtrace[6]['function'] === 'get_permalink' )
+		     || ( isset( $debug_backtrace[4]['function'] )
+		          && $debug_backtrace[4]['function'] === 'get_permalink' ) // WP 3.5
+		) {
+			return $term;
+		}
+
+		$current_lang = $sitepress->get_current_language();
+		$translated_id = $wpml_term_translations->element_id_in($term->term_taxonomy_id, $current_lang );
+
+		if ( $translated_id && (int)$translated_id !== (int)$term->term_taxonomy_id ) {
+			$object_id = isset( $term->object_id ) ? $term->object_id : false;
+			$term = get_term_by( 'term_taxonomy_id', $translated_id, $term->taxonomy );
+			if ( $object_id ) {
+				$translated_object_id = $wpml_post_translations->element_id_in( $object_id, $current_lang );
+				if ( $translated_object_id ) {
+					$term->object_id = $translated_object_id;
+				} else if ( $sitepress->is_display_as_translated_post_type( $wpml_post_translations->get_type( $object_id ) ) ) {
+					$term->object_id = $wpml_post_translations->element_id_in( $object_id, $sitepress->get_default_language() );
+				} else {
+					$term->object_id = $object_id;
+				}
+			}
+		}
+
+		return $term;
+	}
+
 	/**
 	 * Get user terms
 	 *
@@ -237,8 +279,18 @@ class LH_User_Taxonomies_plugin {
 	 * @uses wp_get_object_terms()
 	 */
 	public static function get_object_terms( $user_id, $taxonomy, $args = array() ) {
+		global $sitepress;
+
 		self::set_tables();
+		if ( $sitepress && has_filter( 'get_term', array( $sitepress, 'get_term_adjust_id'), 1, 1 ) ) {
+			remove_filter( 'get_term', array( $sitepress, 'get_term_adjust_id'), 1, 1 );
+			add_filter( 'get_term', array( 'LH_User_Taxonomies_plugin', 'get_term_adjust_id'), 1, 1 );
+		}
 		$return = wp_get_object_terms( $user_id, $taxonomy, $args );
+		if ( $sitepress && has_filter( 'get_term', array( self, 'get_term_adjust_id'), 1, 1 ) ) {
+			remove_filter( 'get_term', array( 'LH_User_Taxonomies_plugin', 'get_term_adjust_id'), 1, 1 );
+			add_filter( 'get_term', array( $sitepress, 'get_term_adjust_id'), 1, 1 );
+		}
 		self::reset_tables();
 		return $return;
 	}
