@@ -95,3 +95,6 @@ All tickets for the project are being tracked on [GitHub][].
 
 **1.52 February 22, 2017**  
 * Buildtree bug fix
+
+**2.0.1 21.08.2018**
+* Fixed taxonomy argument to actions
