@@ -72,9 +72,9 @@ class LH_User_Taxonomies_plugin {
 		foreach((array) $terms as $term) {
 			$count	= $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $wpdb->term_relationships, $wpdb->users WHERE $wpdb->term_relationships.object_id = $wpdb->users.ID and $wpdb->term_relationships.term_taxonomy_id = %d", $term));
 
-			do_action('edit_term_taxonomy', $term, $taxonomy);
+			do_action('edit_term_taxonomy', $term, $taxonomy->name);
 			$wpdb->update($wpdb->term_taxonomy, compact('count'), array('term_taxonomy_id'=>$term));
-			do_action('edited_term_taxonomy', $term, $taxonomy);
+			do_action('edited_term_taxonomy', $term, $taxonomy->name);
 		}
 		$this->reset_tables();
 	}
