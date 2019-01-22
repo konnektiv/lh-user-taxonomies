@@ -150,7 +150,7 @@ class LH_User_Taxonomies_plugin {
 	 */
 	public function set_user_column($columns) {
 		unset($columns['posts']);
-		$columns['users']	= __('Users');
+		$columns['users']	= __('Users', $this->namespace );
 		return $columns;
 	}
 
@@ -476,14 +476,14 @@ class LH_User_Taxonomies_plugin {
 
 				<table class="form-table">
 					<tr>
-						<th><label for=""><?php _e("Select {$taxonomy->labels->singular_name}")?></label></th>
+						<th><label for=""><?php printf( __( 'Select %s', $this->namespace ), $taxonomy->labels->singular_name ) ?></label></th>
 						<td>
 							<?php if(!empty($terms)): ?>
 
 								<?php $this->renderTree( $this->buildTree( $terms ), $stack, $user, $key, $input_type ); ?>
 
 							<?php else:?>
-								<?php _e("There are no {$taxonomy->name} available.")?>
+								<?php printf( __( 'There are no %s available.', $this->namespace ), $taxonomy->name ) ?>
 							<?php endif?>
 						</td>
 					</tr>
@@ -493,7 +493,7 @@ class LH_User_Taxonomies_plugin {
 		// Output the above if we have anything, with a heading
 		$output	= ob_get_clean();
 		if(!empty($output)) {
-			echo '<h3>', __('Taxonomies'), '</h3>';
+			echo '<h3>', __( 'Taxonomies', $this->namespace ), '</h3>';
 			echo $output;
 		}
 	}
@@ -813,7 +813,7 @@ private function set_terms_for_user( $user_id, $taxonomy, $terms = array(), $bul
 				<input id="<?php echo $this->namespace;  ?>-<?php echo $taxonomy->name;  ?>-bulk_edit-nonce" name="<?php  echo $this->namespace;  ?>-bulk_edit-nonce" value="<?php echo wp_create_nonce($this->namespace."-bulk_edit-nonce"); ?>" type="hidden" />
 				<input id="<?php echo $this->namespace;  ?>-<?php echo $taxonomy->name;  ?>-bulk_edit-taxonomy" name="<?php  echo $this->namespace;  ?>-bulk_edit-taxonomy" value="<?php echo $taxonomy->name; ?>" type="hidden" />
 
-				<?php submit_button( esc_html__( 'Apply' ), 'action', $taxonomy->name . '-submit', false ); ?>
+				<?php submit_button( esc_html__( 'Apply', $this->namespace ), 'action', $taxonomy->name . '-submit', false ); ?>
 
 			</fieldset>
 		</form>
