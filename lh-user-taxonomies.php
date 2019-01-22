@@ -149,8 +149,11 @@ class LH_User_Taxonomies_plugin {
 	 * Need to replace "Posts" with "Users"
 	 */
 	public function set_user_column($columns) {
-		unset($columns['posts']);
-		$columns['users']	= __('Users', $this->namespace );
+	    $screen = get_current_screen();
+	    if ( $screen && $screen->parent_file == 'users.php' ) {
+		    unset( $columns['posts'] );
+		    $columns['users'] = __( 'Users', $this->namespace );
+	    }
 		return $columns;
 	}
 
