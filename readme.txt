@@ -98,3 +98,8 @@ All tickets for the project are being tracked on [GitHub][].
 
 **2.0.1 21.08.2018**
 * Fixed taxonomy argument to actions
+
+**2.0.2 22.01.2019**
+* Make taxonomy profile field empty label translatable with WPML string translation
+* Link term count to users
+* Fix term counts for shared taxonomies on post screens
