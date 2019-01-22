@@ -206,6 +206,13 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		}
 
 		foreach ( $saved_settings as $setting_key => $setting_value ) {
+
+		    if ( $setting_key == 'empty_label' ) {
+
+		        // register empty label for string translation
+			    do_action( 'wpml_register_single_string', 'lh_user_taxonomies', "$saved_settings[taxonomy]_empty_label_$field_id", $setting_value );
+            }
+
 			bp_xprofile_update_meta( $field_id, 'field', $setting_key, $setting_value );
 		}
 
@@ -317,7 +324,9 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		$tax = get_taxonomy( $settings['taxonomy'] );
 
 		$options = $this->get_children();
-		$empty_label = /* translators: no option picked in select box */ sprintf( $settings['empty_label'], $tax->labels->singular_name );
+		/* translators: no option picked in select box */
+		$empty_label = apply_filters( 'wpml_translate_single_string', $settings['empty_label'], 'lh_user_taxonomies', "$settings[taxonomy]_empty_label_{$this->field_obj->id}" );
+		$empty_label = sprintf( $empty_label, $tax->labels->singular_name );
 
 		if ( ! $settings['multiple'] ) {
 			$html    = '<option value="">' . $empty_label . '</option>';
