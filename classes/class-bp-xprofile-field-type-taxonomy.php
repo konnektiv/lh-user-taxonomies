@@ -320,7 +320,9 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 	 */
 	public function edit_field_options_html( array $args = array() ) {
 		$settings = self::get_field_settings( $this->field_obj->id );
-		$original_option_values = maybe_unserialize( BP_XProfile_ProfileData::get_value_byid( $this->field_obj->id, $args['user_id'] ) );
+		$original_option_values = apply_filters( 'bp_taxonomy_profile_field_original_option_values',
+            maybe_unserialize( BP_XProfile_ProfileData::get_value_byid( $this->field_obj->id, $args['user_id'] ) ),
+            $this->field_obj->id, $args['user_id'] );
 		$tax = get_taxonomy( $settings['taxonomy'] );
 
 		$options = $this->get_children();
