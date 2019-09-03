@@ -291,7 +291,7 @@ class LH_User_Taxonomies_plugin {
 			add_filter( 'get_term', array( 'LH_User_Taxonomies_plugin', 'get_term_adjust_id'), 1, 1 );
 		}
 		$return = wp_get_object_terms( $user_id, $taxonomy, $args );
-		if ( $sitepress && has_filter( 'get_term', array( self, 'get_term_adjust_id'), 1, 1 ) ) {
+		if ( $sitepress && has_filter( 'get_term', array( 'LH_User_Taxonomies_plugin', 'get_term_adjust_id'), 1, 1 ) ) {
 			remove_filter( 'get_term', array( 'LH_User_Taxonomies_plugin', 'get_term_adjust_id'), 1, 1 );
 			add_filter( 'get_term', array( $sitepress, 'get_term_adjust_id'), 1, 1 );
 		}
