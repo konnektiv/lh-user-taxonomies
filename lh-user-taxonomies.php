@@ -232,6 +232,17 @@ class LH_User_Taxonomies_plugin {
 		$wpdb->term_relationships = self::$wp_term_relationships;
 	}
 
+	/**
+     * copied from WPML version. This preserves the object_id for user queries with 'all_with_object_id'
+     *
+     * wpml strips the object_id from the result if it can not
+	 * find the translated object. As users can not be translated with WPML,
+	 * preserve the original object_id
+     *
+	 * @param $term
+	 *
+	 * @return array|false|WP_Term
+	 */
 	static function get_term_adjust_id( $term ) {
 
 		/** @var WPML_Term_Translation $wpml_term_translations */
