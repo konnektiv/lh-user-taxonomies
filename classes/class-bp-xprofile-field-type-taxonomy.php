@@ -68,7 +68,7 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		if ( ! $old_terms )
 			$old_terms = self::get_current_terms( $profile_data );
 
-		// check if old terms are set by any other profile field fot this taxonomy
+		// check if old terms are set by any other profile field for this taxonomy
 		$field_ids = LH_User_Taxonomies_plugin::get_xprofile_field_ids_from_taxonomy( $settings['taxonomy'] );
 
 		// only get fields which are synced with the taxonomy
