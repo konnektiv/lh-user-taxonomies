@@ -469,6 +469,7 @@ class LH_User_Taxonomies_plugin {
 	 * @param Object $user	- The user of the view/edit screen
 	 */
 	public function user_profile($user) {
+		global $sitepress;
 
 		// Using output buffering as we need to make sure we have something before outputting the header
 		// But we can't rely on the number of taxonomies, as capabilities may vary
@@ -485,7 +486,15 @@ class LH_User_Taxonomies_plugin {
 			//if(!current_user_can($taxonomy->cap->assign_terms)) continue;
 			// Get all the terms in this taxonomy
 			$terms		= self::get_terms($key, array('hide_empty'=>false));
-			$stack 		= wp_list_pluck( self::get_object_terms( $user->ID, $key ), 'slug' );
+			$object_terms      = self::get_object_terms( $user->ID, $key );
+
+			// if WPML is active, make sure to translate current terms so the right
+            // terms are selected
+			if ( $sitepress ) {
+				$object_terms = array_map( array( $sitepress, 'get_term_adjust_id' ), $object_terms );
+			}
+			$stack      = wp_list_pluck( $object_terms, 'slug' );
+
 			$input_type = ( $taxonomy->single_value ) ? 'radio' : 'checkbox' ;
 			?>
 
