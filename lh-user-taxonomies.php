@@ -477,11 +477,6 @@ class LH_User_Taxonomies_plugin {
 
 		foreach(self::$taxonomies as $key=>$taxonomy):
 
-			if ( ( $output = apply_filters('lh_user_taxonomies_user_profile', false, $user, $key, $taxonomy ) ) ) {
-				echo $output;
-				continue;
-			}
-
 			// Check the current user can assign terms for this taxonomy
 			//if(!current_user_can($taxonomy->cap->assign_terms)) continue;
 			// Get all the terms in this taxonomy
@@ -504,7 +499,11 @@ class LH_User_Taxonomies_plugin {
 						<td>
 							<?php if(!empty($terms)): ?>
 
-								<?php $this->renderTree( $this->buildTree( $terms ), $stack, $user, $key, $input_type ); ?>
+								<?php if ( $output = apply_filters('lh_user_taxonomies_user_profile_input', false, $terms, $stack, $user, $key, $taxonomy ) ) {
+									echo $output;
+								} else {
+									$this->renderTree( $this->buildTree( $terms ), $stack, $user, $key, $input_type );
+								} ?>
 
 							<?php else:?>
 								<?php printf( __( 'There are no %s available.', $this->namespace ), $taxonomy->name ) ?>
