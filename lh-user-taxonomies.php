@@ -477,6 +477,11 @@ class LH_User_Taxonomies_plugin {
 
 		foreach(self::$taxonomies as $key=>$taxonomy):
 
+			// filter if this taxonomy should be shown in user profile
+			if ( ! apply_filters( 'lh_user_taxonomies_show_profile_edit', true, $key, $taxonomy ) ) {
+				continue;
+			}
+
 			// Check the current user can assign terms for this taxonomy
 			//if(!current_user_can($taxonomy->cap->assign_terms)) continue;
 			// Get all the terms in this taxonomy
@@ -785,6 +790,10 @@ private function set_terms_for_user( $user_id, $taxonomy, $terms = array(), $bul
 
 		foreach (self::$taxonomies as $taxonomy){
 			if ( ! $taxonomy->show_admin_column )
+				continue;
+
+			// should this taxonomy be bulk editable?
+			if ( ! apply_filters('lh_user_taxonomies_show_bulk_edit', true, $taxonomy->name, $taxonomy ) )
 				continue;
 
 			$terms = self::get_terms( $taxonomy->name, array('hide_empty' => false ) );
