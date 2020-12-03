@@ -42,7 +42,7 @@ class LH_User_Taxonomies_plugin {
 		if ( ! $args['public'] ) return;
 
 		// We're given an array, but expected to work with an object later on
-		$args	= (object) $args;
+		$args = $wp_taxonomies[ $taxonomy ];
 
 		// Register any hooks/filters that rely on knowing the taxonomy now
 		add_filter("manage_edit-{$taxonomy}_columns",	array($this, 'set_user_column'));
