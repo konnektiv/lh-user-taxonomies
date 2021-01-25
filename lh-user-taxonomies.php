@@ -673,15 +673,17 @@ private function set_terms_for_user( $user_id, $taxonomy, $terms = array(), $bul
 
 			foreach (self::$taxonomies as $taxonomy) {
 				if(!empty($_GET[$taxonomy->name])) {
-					$term = self::get_term_by('slug', esc_attr($_GET[$taxonomy->name]), $taxonomy->name);
-					$new_ids = self::get_objects_in_term($term->term_id, $taxonomy->name);
-					if (!isset($ids) || empty($ids)){
-						$ids = $new_ids;
-					} else {
-						$ids = array_intersect($ids, $new_ids);
+					if ( ( $term = self::get_term_by('slug', esc_attr($_GET[$taxonomy->name]), $taxonomy->name) )) {
+						$new_ids = self::get_objects_in_term( $term->term_id, $taxonomy->name );
+						if ( ! isset( $ids ) || empty( $ids ) ) {
+							$ids = $new_ids;
+						} else {
+							$ids = array_intersect( $ids, $new_ids );
+						}
 					}
 				}
 			}
+
 			if ( isset( $ids ) ){
 				$ids = implode(',', wp_parse_id_list( $ids ) );
 				$Query->query_where .= " AND $wpdb->users.ID IN ($ids)";
