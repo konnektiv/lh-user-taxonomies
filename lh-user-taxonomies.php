@@ -506,6 +506,8 @@ class LH_User_Taxonomies_plugin {
 				continue;
 			}
 
+			$name = "user-tax-$key";
+
 			// Check the current user can assign terms for this taxonomy
 			//if(!current_user_can($taxonomy->cap->assign_terms)) continue;
 			// Get all the terms in this taxonomy
@@ -533,7 +535,7 @@ class LH_User_Taxonomies_plugin {
 							<?php if ( $output = apply_filters( 'lh_user_taxonomies_user_profile_input', false, $terms, $stack, $user, $key, $taxonomy ) ) {
 								echo $output;
 							} else {
-								$this->renderTree( $this->buildTree( $terms ), $stack, $user, $key, $input_type );
+								$this->renderTree( $this->buildTree( $terms ), $stack, $user, $name, $input_type );
 							} ?>
 
 						<?php else: ?>
@@ -561,12 +563,13 @@ class LH_User_Taxonomies_plugin {
 		foreach ( self::$taxonomies as $key => $taxonomy ) {
 			// Check the current user can edit this user and assign terms for this taxonomy
 			if ( current_user_can( 'edit_user', $user_id ) && current_user_can( $taxonomy->cap->assign_terms ) ) {
+				$name = "user-tax-$key";
 
-				if ( is_array( $_POST[ $key ] ) ) {
-					$term = $_POST[ $key ];
+				if ( is_array( $_POST[ $name ] ) ) {
+					$term = $_POST[ $name ];
 					self::set_object_terms( $user_id, $term, $key, false );
 				} else {
-					$term = esc_attr( $_POST[ $key ] );
+					$term = esc_attr( $_POST[ $name ] );
 					self::set_object_terms( $user_id, array( $term ), $key, false );
 				}
 				// Save the data
