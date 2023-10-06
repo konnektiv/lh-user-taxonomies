@@ -137,11 +137,12 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 	 */
 	public static function get_field_settings( $field_id ) {
 		$defaults = array(
-			'taxonomy'          => null,
-			'sync_terms'		=> false,
+			'taxonomy'              => null,
+			'sync_terms'            => false,
 			'sync_terms_to_profile' => false,
-			'multiple'			=> false,
-			'empty_label'		=> esc_html__( 'Choose your %s', 'buddypress' )
+			'multiple'              => false,
+			'empty_label'           => esc_html__( 'Choose your %s', 'buddypress' ),
+			'display'               => 'select'
 		);
 
 		$settings = array();
@@ -262,11 +263,8 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		/** This action is documented in bp-xprofile/bp-xprofile-classes */
 		do_action( bp_get_the_profile_field_errors_action() ); ?>
 
-		<select <?php echo $this->get_edit_field_html_elements( $raw_properties ); ?>>
-			<?php bp_the_profile_field_options( array( 'user_id' => $user_id ) ); ?>
-		</select>
-
 		<?php
+		$this->get_field_html( $raw_properties, array( 'user_id' => $user_id ) );
 	}
 
 	/**
@@ -330,7 +328,7 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		$empty_label = apply_filters( 'wpml_translate_single_string', $settings['empty_label'], 'lh_user_taxonomies', "$settings[taxonomy]_empty_label_{$this->field_obj->id}" );
 		$empty_label = sprintf( $empty_label, $tax->labels->singular_name );
 
-		if ( ! $settings['multiple'] ) {
+		if ( ! $settings['multiple'] && $settings['display'] === 'select' ) {
 			$html    = '<option value="">' . $empty_label . '</option>';
 		}
 
@@ -364,14 +362,22 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 
 			// First, check to see whether the user-entered value matches.
 			if ( in_array( $allowed_options, $option_values ) ) {
-				$selected = ' selected="selected"';
+				$selected = $settings['display'] === 'select' ? ' selected="selected"' : ' checked';
 			}
 
 			// Then, if the user has not provided a value, check for defaults.
 			if ( ! is_array( $original_option_values ) && empty( $option_values ) && $options[$k]->is_default_option ) {
-				$selected = ' selected="selected"';
+				$selected = $settings['display'] === 'select' ? ' selected="selected"' : ' checked';
 			}
 
+			if ( $settings['display'] === 'select' ) {
+				$input = '<option' . $selected . ' value="' . esc_attr( stripslashes( $options[ $k ]->slug ) ) . '">' . esc_html( stripslashes( $options[ $k ]->name ) ) . '</option>';
+			} else {
+                $input = '<label><input type=' . ( $settings['multiple'] ? 'checkbox' : 'radio' )  . $selected .
+                         ' value="' . esc_attr( stripslashes( $options[ $k ]->slug ) ) . '"' .
+                         ' name="field_' . $this->field_obj->id  . ( $settings['multiple'] ? '[]' : '' ) . '"  />' .
+                         esc_html( stripslashes( $options[ $k ]->name ) ) . '</label>';
+			}
 			/**
 			 * Filters the HTML output for options in a select input.
 			 *
@@ -383,7 +389,7 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 			 * @param string $selected Current selected value.
 			 * @param string $k        Current index in the foreach loop.
 			 */
-			$html .= apply_filters( 'bp_get_the_profile_field_options_taxonomy', '<option' . $selected . ' value="' . esc_attr( stripslashes( $options[$k]->slug ) ) . '">' . esc_html( stripslashes( $options[$k]->name ) ) . '</option>', $options[$k], $this->field_obj->id, $selected, $k );
+			$html .= apply_filters( 'bp_get_the_profile_field_options_taxonomy', $input, $options[$k], $this->field_obj->id, $selected, $k );
 		}
 
 		echo $html;
@@ -426,17 +432,26 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 	 * @param array $raw_properties Optional key/value array of permitted attributes that you want to add.
 	 */
 	public function admin_field_html( array $raw_properties = array() ) {
-		?>
 
-		<label for="<?php bp_the_profile_field_input_name(); ?>" class="screen-reader-text"><?php
-			/* translators: accessibility text */
-			esc_html_e( 'Select', 'buddypress' );
+		?><label for="<?php bp_the_profile_field_input_name(); ?>" class="screen-reader-text"><?php
+            /* translators: accessibility text */
+            esc_html_e( 'Select', 'buddypress' );
 		?></label>
-		<select <?php echo $this->get_edit_field_html_elements( $raw_properties ); ?>>
-			<?php bp_the_profile_field_options(); ?>
-		</select>
-
 		<?php
+		$this->get_field_html( $raw_properties );
+	}
+
+	function get_field_html( array $raw_properties = array(), $args = null ) {
+		global $field;
+		$settings = self::get_field_settings( $field->id );
+
+		if ( isset( $settings['display'] ) && $settings['display'] === 'select' ) {
+			?><select <?php echo $this->get_edit_field_html_elements( $raw_properties ); ?>><?php
+		}
+		bp_the_profile_field_options( $args );
+		if ( isset( $settings['display'] ) && $settings['display'] === 'select' ) {
+			?></select><?php
+		}
 	}
 
 	public static function display_filter( $field_value, $field_id = '' ) {
@@ -523,6 +538,13 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 					<label for="multiple_<?php echo esc_attr( $type ); ?>"><?php esc_html_e( 'Allow multiple values:', 'buddypress' ); ?></label>
 					<input type="checkbox" value="1" <?php checked( $settings['multiple'] ); ?> name="field-settings[multiple]" id="multiple_<?php echo esc_attr( $type ); ?>" >
 				</p>
+                <p>
+                    <label for="display_<?php echo esc_attr( $type ); ?>"><?php esc_html_e( 'Display:', 'buddypress' ); ?></label>
+                    <select name="field-settings[display]" id="display_<?php echo esc_attr( $type ); ?>" >
+                        <option value="select" <?php selected( 'select', $settings['display'] ); ?>><?php  esc_html_e( 'Select box', 'buddypress' ); ?></option>
+                        <option value="checkbox_radio" <?php selected( 'checkbox_radio', $settings['display'] ); ?>><?php  esc_html_e( 'Check boxes/Radio buttons', 'buddypress' ); ?></option>
+                    </select>
+                </p>
 
 				<?php
 
