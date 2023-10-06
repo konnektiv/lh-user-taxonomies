@@ -373,9 +373,9 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 			if ( $settings['display'] === 'select' ) {
 				$input = '<option' . $selected . ' value="' . esc_attr( stripslashes( $options[ $k ]->slug ) ) . '">' . esc_html( stripslashes( $options[ $k ]->name ) ) . '</option>';
 			} else {
-                $input = '<label><input type=' . ( $settings['multiple'] ? 'checkbox' : 'radio' )  . $selected .
+                $input = '<label class="taxonomy-field-item"><input type=' . ( $settings['multiple'] ? 'checkbox' : 'radio' )  . $selected .
                          ' value="' . esc_attr( stripslashes( $options[ $k ]->slug ) ) . '"' .
-                         ' name="field_' . $this->field_obj->id  . ( $settings['multiple'] ? '[]' : '' ) . '"  />' .
+                         ' name="' . bp_get_the_profile_field_input_name()  . ( $settings['multiple'] ? '[]' : '' ) . '"  />' .
                          esc_html( stripslashes( $options[ $k ]->name ) ) . '</label>';
 			}
 			/**
