@@ -264,7 +264,8 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		do_action( bp_get_the_profile_field_errors_action() ); ?>
 
 		<?php
-		$this->get_field_html( $raw_properties, array( 'user_id' => $user_id ) );
+		$this->get_field_html( $raw_properties, array( 'user_id' => $user_id ) ); ?>
+		<p class="description"><?php bp_the_profile_field_description(); ?></p><?php
 	}
 
 	/**
@@ -361,12 +362,9 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 			$allowed_options = xprofile_sanitize_data_value_before_save( $options[$k]->slug, false, false );
 
 			// First, check to see whether the user-entered value matches.
-			if ( in_array( $allowed_options, $option_values ) ) {
-				$selected = $settings['display'] === 'select' ? ' selected="selected"' : ' checked';
-			}
-
-			// Then, if the user has not provided a value, check for defaults.
-			if ( ! is_array( $original_option_values ) && empty( $option_values ) && $options[$k]->is_default_option ) {
+			if ( in_array( $allowed_options, $option_values ) ||
+			     // Then, if the user has not provided a value, check for defaults.
+			     ! is_array( $original_option_values ) && empty( $option_values ) && $options[ $k ]->is_default_option ) {
 				$selected = $settings['display'] === 'select' ? ' selected="selected"' : ' checked';
 			}
 
