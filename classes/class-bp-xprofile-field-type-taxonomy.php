@@ -323,11 +323,12 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
             maybe_unserialize( BP_XProfile_ProfileData::get_value_byid( $this->field_obj->id, $args['user_id'] ) ),
             $this->field_obj->id, $args['user_id'] );
 		$tax = get_taxonomy( $settings['taxonomy'] );
+        $html = '';
 
 		$options = $this->get_children();
 		/* translators: no option picked in select box */
 		$empty_label = apply_filters( 'wpml_translate_single_string', $settings['empty_label'], 'lh_user_taxonomies', "$settings[taxonomy]_empty_label_{$this->field_obj->id}" );
-		$empty_label = sprintf( $empty_label, $tax->labels->singular_name );
+		$empty_label = sprintf( $empty_label, $tax ? $tax->labels->singular_name : '' );
 
 		if ( ! $settings['multiple'] && $settings['display'] === 'select' ) {
 			$html    = '<option value="">' . $empty_label . '</option>';
@@ -341,7 +342,7 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 
 		$option_values = array_map( function( $slug ) use ( $settings ) {
 			$term = get_term_by( 'slug', $slug, $settings['taxonomy'] );
-			return $term->slug;
+			return $term ? $term->slug : '';
 		}, $option_values );
 
 		for ( $k = 0, $count = count( $options ); $k < $count; ++$k ) {
