@@ -351,8 +351,8 @@ class LH_User_Taxonomies_plugin {
 				return $term->slug;
 			}, $tt_ids );
 
-			$data->value = BP_XProfile_Field_Type_Taxonomy::is_multiple_field( $field_id ) ?
-				$terms : reset( $terms );
+            $data->value = BP_XProfile_Field_Type_Taxonomy::is_multiple_field( $field_id ) ?
+                    ( empty( $terms ) ? '' : $terms ) : reset( $terms );
 
 			$data->save();
 		}
@@ -562,11 +562,11 @@ class LH_User_Taxonomies_plugin {
 	public function save_profile( $user_id ) {
 		foreach ( self::$taxonomies as $key => $taxonomy ) {
 			// Check the current user can edit this user and assign terms for this taxonomy
-			if ( current_user_can( 'edit_user', $user_id ) && current_user_can( $taxonomy->cap->assign_terms ) ) {
+			if ( current_user_can( 'edit_user', $user_id ) &&
+				 current_user_can( $taxonomy->cap->assign_terms ) ) {
 				$name = "user-tax-$key";
 
-				if ( is_array( $_POST[ $name ] ) ) {
-					$term = $_POST[ $name ];
+				if ( is_array( $term = $_POST[ $name ] ?? [] ) ) {
 					self::set_object_terms( $user_id, $term, $key, false );
 				} else {
 					$term = esc_attr( $_POST[ $name ] );
