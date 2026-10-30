@@ -29,6 +29,7 @@ class BP_XProfile_Field_Type_Taxonomy extends BP_XProfile_Field_Type {
 		$this->name     = _x( 'Taxonomy Select Box', 'xprofile field type', 'buddypress' );
 
 		$this->do_settings_section = true;
+        $this->supports_multiple_defaults = true;
 
 		$this->set_format( '/^.+$/', 'replace' );
 
